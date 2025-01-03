@@ -1,0 +1,12 @@
+[package]
+name = "place_constants"
+version = "0.1.0"
+edition = "2021"
+description = "Crate intended for defining constants at compile time"
+
+[dependencies]
+
+[lib]
+name = "place_constants"
+path = "constants.rs"
+crate-type = ["lib", "staticlib"]
