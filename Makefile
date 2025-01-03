@@ -4,6 +4,7 @@ default:
 	echo "pub const INTERVAL: usize = ${interval};" > constants/constants.rs
 	echo "pub const SIZE_X: usize = ${size_x};" >> constants/constants.rs
 	echo "pub const SIZE_Y: usize = ${size_y};" >> constants/constants.rs
+	echo "pub const LOCATION: &str = \"${location}\";" >> constants/constants.rs
 
 	cargo build
 	
@@ -18,7 +19,8 @@ default:
 	mkdir -p target/place/data/folders
 	mkdir -p target/place/data/files
 	
-	cp target/debug/place_cat target/place
+	cp target/debug/place_cat target/place/cat
+	cp target/debug/place_print target/place/print
 
 clean:
 	cargo clean

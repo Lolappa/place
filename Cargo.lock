@@ -16,3 +16,10 @@ version = "0.1.0"
 [[package]]
 name = "place_constants"
 version = "0.1.0"
+
+[[package]]
+name = "place_print"
+version = "0.1.0"
+dependencies = [
+ "place_constants",
+]
