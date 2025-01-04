@@ -2,6 +2,7 @@ include *.config
 
 default:
 	echo "pub const INTERVAL: usize = ${interval};" > constants/constants.rs
+	echo "pub const TOKEN: &str = \"${token}\";" >> constants/constants.rs
 	echo "pub const SIZE_X: usize = ${size_x};" >> constants/constants.rs
 	echo "pub const SIZE_Y: usize = ${size_y};" >> constants/constants.rs
 	echo "pub const LOCATION: &str = \"${location}\";" >> constants/constants.rs
