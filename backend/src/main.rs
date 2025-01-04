@@ -7,6 +7,7 @@ use std::fs::File;
 fn main() {
     create_data();
     write_byte(4, 31, 50);
+    create_file((2, 2), (4, 4), "tst");
 }
 
 fn create_data() {
@@ -28,4 +29,12 @@ fn write_byte(x: usize, y: usize, value: u8) {
         .unwrap();
     let _ = data_file.seek(Start((y * SIZE_X + x).try_into().unwrap()));
     let _ = data_file.write(&[value]);
+}
+
+fn create_file(pos: (u64, u64), size: (u64, u64), name: &str) {
+    let mut file = File::create_new(Path::new(LOCATION).join("data/files").join(name)).expect("File already exists");
+    let _ = file.write(&pos.0.to_le_bytes());
+    let _ = file.write(&pos.1.to_le_bytes());
+    let _ = file.write(&size.0.to_le_bytes());
+    let _ = file.write(&size.1.to_le_bytes());
 }
