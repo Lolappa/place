@@ -11,13 +11,14 @@ use std::{
     path::Path,
     thread, usize,
 };
+use users::uid_t;
 
 fn main() {
     create_data();
     write_byte(4, 31, 50);
     create_file((2, 2), (4, 4), &OsString::from("tst"));
     create_file((2, 2), (0, 0), &OsString::from("empty"));
-    if let Ok(listener) = UnixListener::bind(Path::new(LOCATION).join(".sock")) {
+    if let Ok(listener) = UnixListener::bind(SOCK_LOCATION) {
         // accept connections and process them, spawning a new thread for each one
         for stream in listener.incoming() {
             match stream {
@@ -45,7 +46,7 @@ fn handle_client(mut stream: UnixStream) {
                 let (temp, slice) = slice.split_at(16);
                 (temp.try_into().unwrap(), slice)
             };
-            let (userid, slice): (u32, &[u8]) = {
+            let (userid, slice): (uid_t, &[u8]) = {
                 let (temp, slice) = slice.split_at(size_of::<u32>());
                 (u32::from_ne_bytes(temp.try_into().unwrap()), slice)
             };
@@ -191,7 +192,7 @@ fn handle_client(mut stream: UnixStream) {
     }
 }
 
-fn can_do_change(token: [u8; 16], userid: u32) -> bool {
+fn can_do_change(token: [u8; 16], userid: uid_t) -> bool {
     todo!()
 }
 

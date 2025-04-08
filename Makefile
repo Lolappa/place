@@ -6,6 +6,7 @@ default:
 	echo "pub const SIZE_X: usize = ${size_x};" >> constants/constants.rs
 	echo "pub const SIZE_Y: usize = ${size_y};" >> constants/constants.rs
 	echo "pub const LOCATION: &str = \"${location}\";" >> constants/constants.rs
+	echo "pub const SOCK_LOCATION: &str = \"${location}.sock\";" >> constants/constants.rs
 
 	cargo build
 	
@@ -22,6 +23,7 @@ default:
 	
 	cp target/debug/place_cat target/place/cat
 	cp target/debug/place_print target/place/print
+	cp target/debug/place_mkfile target/place/mkfile
 
 clean:
 	cargo clean
