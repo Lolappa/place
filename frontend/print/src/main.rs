@@ -1,6 +1,6 @@
-use place_constants::{ SIZE_X, SIZE_Y, LOCATION };
-use std::path::{ Path, PathBuf };
+use place_constants::{LOCATION, SIZE_X, SIZE_Y};
 use std::fs;
+use std::path::{Path, PathBuf};
 
 struct Options {
     files: Vec<PathBuf>,
@@ -8,9 +8,7 @@ struct Options {
 
 impl Options {
     fn new() -> Options {
-        Options {
-            files: vec![],
-        }
+        Options { files: vec![] }
     }
 }
 
@@ -47,17 +45,17 @@ fn main() {
 
 fn file(options: Options) {
     for file in &options.files {
-    if let Ok(content) = fs::read(file) {
-        let x = u64::from_le_bytes(content[0..8].try_into().expect("Invalid file"));
-        let y = u64::from_le_bytes(content[8..16].try_into().expect("Invalid file"));
-        let dx = u64::from_le_bytes(content[16..24].try_into().expect("Invalid file"));
-        let dy = u64::from_le_bytes(content[24..32].try_into().expect("Invalid file"));
-        println!("{}:", file.display());
-        print((x, y), (dx.try_into().unwrap(), dy.try_into().unwrap()));
-    } else {
-        eprintln!("{}: No such file or directory", &file.display());
-        continue;
-    }
+        if let Ok(content) = fs::read(file) {
+            let x = u64::from_ne_bytes(content[0..8].try_into().expect("Invalid file"));
+            let y = u64::from_ne_bytes(content[8..16].try_into().expect("Invalid file"));
+            let dx = u64::from_ne_bytes(content[16..24].try_into().expect("Invalid file"));
+            let dy = u64::from_ne_bytes(content[24..32].try_into().expect("Invalid file"));
+            println!("{}:", file.display());
+            print((x, y), (dx.try_into().unwrap(), dy.try_into().unwrap()));
+        } else {
+            eprintln!("{}: No such file or directory", &file.display());
+            continue;
+        }
     }
 }
 

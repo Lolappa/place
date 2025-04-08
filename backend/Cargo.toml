@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 place_constants = { workspace = true }
+place_lib = { workspace = true }
