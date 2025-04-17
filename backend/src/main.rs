@@ -136,10 +136,33 @@ fn handle_client(mut stream: UnixStream) {
                     }
                 }
                 RemoveFile => {
+                    let filename;
+                    if let Ok(vec) = read_vec(&stream) {
+                        filename = vec;
+                    } else {
+                        todo!()
+                    }
+                    let filename = OsString::from_vec(filename);
                     //??
                     todo!()
                 }
                 RenameFile => {
+                    let old_filename;
+                    if let Ok(vec) = read_vec(&stream) {
+                        old_filename = vec;
+                    } else {
+                        todo!()
+                    }
+                    let old_filename = OsString::from_vec(old_filename);
+
+                    let new_filename;
+                    if let Ok(vec) = read_vec(&stream) {
+                        new_filename = vec;
+                    } else {
+                        todo!()
+                    }
+                    let new_filename = OsString::from_vec(new_filename);
+
                     //??
                     todo!()
                 }
@@ -153,6 +176,14 @@ fn handle_client(mut stream: UnixStream) {
                                 (usize::from_ne_bytes(temp.try_into().unwrap()), slice)
                             };
                             let y = usize::from_ne_bytes(slice.try_into().unwrap());
+
+                            let filename;
+                            if let Ok(vec) = read_vec(&stream) {
+                                filename = vec;
+                            } else {
+                                todo!()
+                            }
+                            let filename = OsString::from_vec(filename);
                             //??
                             todo!()
                         }

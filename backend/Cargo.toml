@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+serde = { workspace = true }
 users = { workspace = true }
 place_constants = { workspace = true }
 place_lib = { workspace = true }
