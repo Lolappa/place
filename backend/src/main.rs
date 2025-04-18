@@ -1,3 +1,7 @@
+use chacha20poly1305::{
+    aead::{Aead, Buffer, OsRng},
+    AeadCore, ChaCha20Poly1305, KeyInit, Nonce,
+};
 use place_constants::*;
 use place_lib::commands::Command;
 use std::{
@@ -27,15 +31,40 @@ fn main() {
                     /* connection succeeded */
                     thread::spawn(|| handle_client(stream));
                 }
-                Err(_err) => {
-                    /* connection failed */
-                    break;
-                }
+                Err(_err) => { /* connection failed */ }
             }
         }
     }
 }
 
+fn handle_client(mut stream: UnixStream) {
+    let crypt = ChaCha20Poly1305::new(&[0u8; 32].into());
+    todo!("use include_bytes!() here");
+    let nonce = ChaCha20Poly1305::generate_nonce(OsRng);
+
+    if let Err(err) = stream.write_all(&nonce) {
+        todo!()
+    };
+
+    let mut size_of_packet = [0u8; size_of::<usize>()];
+    if let Err(err) = stream.read_exact(&mut size_of_packet) {
+        todo!()
+    };
+    let size_of_packet = usize::from_ne_bytes(size_of_packet);
+
+    let mut ciphertext = Vec::<u8>::with_capacity(size_of_packet);
+    let mut buf = [0u8; 256];
+    while ciphertext.len() != size_of_packet {
+        if let Ok(bytes) = stream.read(&mut buf) {
+            ciphertext.extend_from_slice(&buf[..bytes]);
+        };
+    }
+    let packet = crypt.decrypt(&nonce, &ciphertext[..]);
+
+    todo!("Add something like Packet::from([u8]) to place_lib");
+}
+
+/*
 fn handle_client(mut stream: UnixStream) {
     let mut buf = [0u8; size_of::<[u8; 16]>() + size_of::<uid_t>() + 1];
 
@@ -202,6 +231,7 @@ fn handle_client(mut stream: UnixStream) {
         }
     }
 }
+*/
 
 fn can_do_change(token: [u8; 16], userid: uid_t) -> bool {
     todo!()
