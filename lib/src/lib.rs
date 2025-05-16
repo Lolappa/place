@@ -53,15 +53,30 @@ pub mod packet {
             let mut slice = &value[..];
 
             while slice.len() > 0 {
-                let (block, size) = match Block::slice_from(slice) {
+                let block = match Block::try_from(slice) {
                     Ok(value) => value,
                     Err(_) => {
                         todo!()
                     }
                 };
+                slice = &slice[block.len()..];
+                blocks.push(block);
             }
 
             Ok(Packet { blocks })
+        }
+    }
+
+    impl From<Packet> for Vec<u8> {
+        fn from(value: Packet) -> Self {
+            let mut out: Self =
+                Self::with_capacity(value.blocks.iter().fold(0, |acc, block| acc + block.len()));
+
+            for block in value.blocks {
+                out.extend_from_slice(&Vec::from(block));
+            }
+
+            out
         }
     }
 
@@ -79,8 +94,14 @@ pub mod packet {
             &self.content
         }
 
-        fn slice_from(value: &[u8]) -> Result<(Self, usize), ()> {
-            // TODO: use an actual error type here
+        pub fn len(&self) -> usize {
+            size_of::<usize>() + 1 + &self.content.len() + 1
+        }
+    }
+    impl TryFrom<&[u8]> for Block {
+        type Error = (); // TODO: Use an actual type here
+
+        fn try_from(value: &[u8]) -> Result<Block, Self::Error> {
             let size = match value.get(..size_of::<usize>()) {
                 Some(size) => usize::from_ne_bytes(size.try_into().unwrap()),
                 None => {
@@ -107,13 +128,23 @@ pub mod packet {
                 todo!()
             }
 
-            Ok((
-                Block {
-                    block_type,
-                    content: Vec::from(content),
-                },
-                slice_size,
-            ))
+            Ok(Block {
+                block_type,
+                content: Vec::from(content),
+            })
+        }
+    }
+
+    impl From<Block> for Vec<u8> {
+        fn from(value: Block) -> Self {
+            let mut out: Vec<u8> = Vec::with_capacity(value.len());
+
+            out.extend_from_slice(&value.content.len().to_ne_bytes());
+            out.push(value.block_type as u8);
+            out.extend_from_slice(&value.content);
+            out.extend_from_slice(&Crc::<u32>::new(&CRC_ALG).checksum(&out[..]).to_ne_bytes());
+
+            out
         }
     }
 
