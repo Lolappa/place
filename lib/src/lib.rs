@@ -44,6 +44,27 @@ pub mod packet {
         }
     }
 
+    impl TryFrom<&[u8]> for Packet {
+        type Error = (); // TODO: use an actual type here
+
+        fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+            let mut blocks: Vec<Block> = vec![];
+
+            let mut slice = &value[..];
+
+            while slice.len() > 0 {
+                let (block, size) = match Block::slice_from(slice) {
+                    Ok(value) => value,
+                    Err(_) => {
+                        todo!()
+                    }
+                };
+            }
+
+            Ok(Packet { blocks })
+        }
+    }
+
     pub struct Block {
         block_type: BlockType,
         content: Vec<u8>,
@@ -57,12 +78,9 @@ pub mod packet {
         pub fn content(&self) -> &[u8] {
             &self.content
         }
-    }
 
-    impl TryFrom<&[u8]> for Block {
-        type Error = (); // TODO: use an actual type here
-
-        fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        fn slice_from(value: &[u8]) -> Result<(Self, usize), ()> {
+            // TODO: use an actual error type here
             let size = match value.get(..size_of::<usize>()) {
                 Some(size) => usize::from_ne_bytes(size.try_into().unwrap()),
                 None => {
@@ -70,7 +88,9 @@ pub mod packet {
                 }
             };
 
-            if value.len() < size_of::<usize>() + 1 + size + 4 {
+            let slice_size = size_of::<usize>() + 1 + size + 4;
+
+            if value.len() < slice_size {
                 todo!()
             }
 
@@ -79,27 +99,27 @@ pub mod packet {
                 Err(_) => todo!(),
             };
             let content = &value[size_of::<usize>() + 1..size_of::<usize>() + 1 + size];
-            let block_crc = u32::from_ne_bytes(
-                value[size_of::<usize>() + 1 + size..size_of::<usize>() + 1 + size + 4]
-                    .try_into()
-                    .unwrap(),
-            );
+            let block_crc =
+                u32::from_ne_bytes(value[slice_size - 4..slice_size].try_into().unwrap());
 
             let crc = Crc::<u32>::new(&CRC_ALG);
-            if crc.checksum(content) != block_crc {
+            if crc.checksum(&value[..slice_size - 4]) != block_crc {
                 todo!()
             }
 
-            Ok(Block {
-                block_type,
-                content: Vec::from(content),
-            })
+            Ok((
+                Block {
+                    block_type,
+                    content: Vec::from(content),
+                },
+                slice_size,
+            ))
         }
     }
 
     pub enum BlockType {
-        Meta = 1,
-        String = 2,
+        Meta,
+        String,
     }
 
     impl TryFrom<u8> for BlockType {
@@ -107,8 +127,8 @@ pub mod packet {
 
         fn try_from(value: u8) -> Result<Self, Self::Error> {
             match value {
-                1 => Ok(Self::Meta),
-                2 => Ok(Self::String),
+                val if val == Self::Meta as u8 => Ok(Self::Meta),
+                val if val == Self::String as u8 => Ok(Self::String),
                 _ => Err(()),
             }
         }

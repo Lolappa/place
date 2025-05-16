@@ -1,20 +1,17 @@
 use chacha20poly1305::{
-    aead::{Aead, Buffer, OsRng},
-    AeadCore, ChaCha20Poly1305, KeyInit, Nonce,
+    aead::{Aead, OsRng},
+    AeadCore, ChaCha20Poly1305, KeyInit,
 };
 use place_constants::*;
-use place_lib::commands::Command;
+use place_lib::packet::Packet;
 use std::{
     ffi::{OsStr, OsString},
-    fmt::write,
     fs::File,
-    io::{prelude::*, Error, ErrorKind, Result, SeekFrom},
-    os::unix::{
-        ffi::OsStringExt,
-        net::{UnixListener, UnixStream},
-    },
+    io::prelude::*,
+    io::{Error, ErrorKind, Result, SeekFrom},
+    os::unix::net::{UnixListener, UnixStream},
     path::Path,
-    thread, usize,
+    thread,
 };
 use users::uid_t;
 
@@ -59,9 +56,18 @@ fn handle_client(mut stream: UnixStream) {
             ciphertext.extend_from_slice(&buf[..bytes]);
         };
     }
-    let packet = crypt.decrypt(&nonce, &ciphertext[..]);
 
-    todo!("Add something like Packet::from([u8]) to place_lib");
+    let packet = match Packet::try_from(
+        if let Ok(value) = crypt.decrypt(&nonce, &ciphertext[..]) {
+            value
+        } else {
+            todo!()
+        }
+        .as_slice(),
+    ) {
+        Ok(value) => value,
+        Err(_) => todo!(),
+    };
 }
 
 /*
