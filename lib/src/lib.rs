@@ -137,7 +137,7 @@ pub mod packet {
 
     impl From<Block> for Vec<u8> {
         fn from(value: Block) -> Self {
-            let mut out: Vec<u8> = Vec::with_capacity(value.len());
+            let mut out: Self = Self::with_capacity(value.len());
 
             out.extend_from_slice(&value.content.len().to_ne_bytes());
             out.push(value.block_type as u8);
