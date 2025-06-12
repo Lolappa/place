@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 crc = { workspace = true }
+users = { workspace = true }

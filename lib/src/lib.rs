@@ -27,10 +27,12 @@ pub mod commands {
 
 pub mod packet {
     use crc::{Algorithm, Crc};
+    use users::uid_t;
 
     pub const CRC_ALG: Algorithm<u32> = crc::CRC_24_OPENPGP;
 
     pub struct Packet {
+        header: HeaderBlock,
         blocks: Vec<Block>,
     }
 
@@ -42,6 +44,10 @@ pub mod packet {
         pub fn blocks_mut(&mut self) -> &mut Vec<Block> {
             &mut self.blocks
         }
+
+        pub fn header(&self) -> &HeaderBlock {
+            &self.header
+        }
     }
 
     impl TryFrom<&[u8]> for Packet {
@@ -52,6 +58,19 @@ pub mod packet {
 
             let mut slice = &value[..];
 
+            // Get header block
+            let header = match Block::try_from(slice) {
+                Ok(value) => match HeaderBlock::try_from(value) {
+                    Ok(value) => value,
+                    Err(_) => todo!(),
+                },
+                Err(_) => {
+                    todo!()
+                }
+            };
+            slice = &slice[header.len()..];
+
+            // Get the rest of the blocks
             while slice.len() > 0 {
                 let block = match Block::try_from(slice) {
                     Ok(value) => value,
@@ -63,7 +82,7 @@ pub mod packet {
                 blocks.push(block);
             }
 
-            Ok(Packet { blocks })
+            Ok(Packet { header, blocks })
         }
     }
 
@@ -77,6 +96,49 @@ pub mod packet {
             }
 
             out
+        }
+    }
+
+    const HEADER_LENGTH: usize = size_of::<uid_t>();
+    pub struct HeaderBlock {
+        uid: uid_t,
+    }
+
+    impl HeaderBlock {
+        pub fn len(&self) -> usize {
+            size_of::<usize>() + 1 + HEADER_LENGTH + 1
+        }
+
+        pub fn uid(&self) -> u32 {
+            self.uid
+        }
+    }
+
+    impl TryFrom<Block> for HeaderBlock {
+        type Error = (); // TODO: Use an actual type here
+
+        fn try_from(value: Block) -> Result<Self, Self::Error> {
+            if value.len() != HEADER_LENGTH {
+                return Err(());
+            } else {
+                let mut slice = value.content();
+
+                let uid: uid_t = {
+                    let tmp: &[u8];
+                    (tmp, slice) = slice.split_at(size_of::<uid_t>());
+                    uid_t::from_ne_bytes(tmp.try_into().unwrap())
+                };
+
+                Ok(HeaderBlock { uid })
+            }
+        }
+    }
+
+    impl TryFrom<&[u8]> for HeaderBlock {
+        type Error = (); // TODO: Use an actual type here
+
+        fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+            Self::try_from(Block::try_from(value)?)
         }
     }
 
