@@ -1,9 +1,8 @@
 [package]
-name = "place_lib"
+name = "place_setbyte"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-crc = { workspace = true }
 users = { workspace = true }
-syscalls = "0.6.18"
+place_lib = { workspace = true }

@@ -160,6 +160,7 @@ name = "place_lib"
 version = "0.1.0"
 dependencies = [
  "crc",
+ "syscalls",
  "users",
 ]
 
@@ -177,6 +178,14 @@ name = "place_print"
 version = "0.1.0"
 dependencies = [
  "place_constants",
+]
+
+[[package]]
+name = "place_setbyte"
+version = "0.1.0"
+dependencies = [
+ "place_lib",
+ "users",
 ]
 
 [[package]]
@@ -238,6 +247,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_repr"
+version = "0.1.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "175ee3e80ae9982737ca543e96133087cbd9a485eecc3bc4de9c1a37b47ea59c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -252,6 +272,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "syscalls"
+version = "0.6.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43d0e35dc7d73976a53c7e6d7d177ef804a0c0ee774ec77bcc520c2216fd7cbe"
+dependencies = [
+ "serde",
+ "serde_repr",
 ]
 
 [[package]]

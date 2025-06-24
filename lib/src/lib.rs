@@ -1,4 +1,5 @@
 #[allow(unused)]
+pub mod syscalls;
 
 pub mod commands {
     pub enum Command {
@@ -108,6 +109,10 @@ pub mod packet {
     }
 
     impl HeaderBlock {
+        pub fn new(uid: uid_t, command: Command) -> Self {
+            Self { uid, command }
+        }
+
         pub fn len(&self) -> usize {
             size_of::<usize>() + 1 + HEADER_LENGTH + 1
         }

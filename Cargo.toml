@@ -7,7 +7,7 @@
 #config = "0.15.4"
 
 [workspace]
-members = ["backend", "frontend/*", "lib"]
+members = ["backend", "internal-front/*", "external-front/*", "lib"]
 resolver = "2"
 
 [workspace.dependencies]
