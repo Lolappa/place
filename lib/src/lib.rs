@@ -48,6 +48,10 @@ pub mod packet {
     }
 
     impl Packet {
+        pub fn new(blocks: Vec<Block>) -> Self {
+            Self { blocks }
+        }
+
         pub fn blocks(&self) -> &[Block] {
             &self.blocks
         }
@@ -103,9 +107,7 @@ pub mod packet {
         pub fn to_stdvec(&self) -> PostcardResult<Vec<u8>> {
             postcard::to_stdvec_crc32(&self, Crc::<u32>::new(&CRC_ALG).digest())
         }
-    }
 
-    impl Block {
         /// Returns `true` if the block is [`HeaderBlock`].
         ///
         /// [`HeaderBlock`]: Block::HeaderBlock

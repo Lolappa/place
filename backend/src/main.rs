@@ -1,10 +1,13 @@
 use chacha20poly1305::{
     aead::{Aead, OsRng},
-    AeadCore, ChaCha20Poly1305, KeyInit,
+    AeadCore, ChaCha20Poly1305, KeyInit, XChaCha20Poly1305,
 };
 use place_backend::*;
 use place_constants::*;
-use place_lib::{commands::Command, packet::Packet};
+use place_lib::{
+    commands::Command,
+    packet::{Block, Packet},
+};
 use std::{
     collections::HashMap,
     ffi::OsString,
@@ -42,9 +45,9 @@ fn main() {
 }
 
 fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, SystemTime>>) {
-    let crypt = ChaCha20Poly1305::new(&[0u8; 32].into());
+    let crypt = XChaCha20Poly1305::new(&[0u8; 32].into());
     // TODO: use include_bytes!() or something here
-    let nonce = ChaCha20Poly1305::generate_nonce(OsRng);
+    let nonce = XChaCha20Poly1305::generate_nonce(OsRng);
 
     if let Err(err) = stream.write_all(&nonce) {
         todo!()
@@ -76,33 +79,22 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
         Err(_) => todo!(),
     };
 
-    let uid = packet.header().uid();
+    let (uid, command) = if let Block::HeaderBlock { uid, command } = packet.blocks()[0] {
+        (uid, command)
+    } else {
+        panic!()
+    };
+
     if let Ok(can_change) = can_do_change(uid, timestamps) {
         if can_change {
-            match packet.header().command() {
+            match command {
                 Command::SetByte => {
-                    if let Some(block) = packet.blocks().get(0) {
-                        let mut slice = block.content();
-                        if slice.len() != size_of::<usize>() + size_of::<usize>() + 1 {
-                            todo!()
-                        }
-
-                        let x = {
-                            let tmp: &[u8];
-                            (tmp, slice) = slice.split_at(size_of::<usize>());
-                            usize::from_ne_bytes(tmp.try_into().unwrap())
-                        };
-
-                        let y = {
-                            let tmp: &[u8];
-                            (tmp, slice) = slice.split_at(size_of::<usize>());
-                            usize::from_ne_bytes(tmp.try_into().unwrap())
-                        };
-
-                        let value = slice[0];
-                        if let Err(err) = actions::write_byte(x, y, value) {
+                    if let Some(Block::SetByteContent { x, y, value }) = packet.blocks().get(1) {
+                        if let Err(err) = actions::write_byte(*x, *y, *value) {
                             todo!()
                         };
+                    } else {
+                        todo!()
                     }
                 }
                 Command::CreateFile => {}

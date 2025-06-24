@@ -1,9 +1,17 @@
 use std::{
-    env::{self, args},
+    env,
+    io::{Read, Write},
+    os::unix::net::UnixStream,
     usize,
 };
 
-use place_lib::{commands::Command, packet::HeaderBlock, syscalls};
+use chacha20poly1305::{aead::Aead, KeyInit, XChaCha20Poly1305, XNonce};
+use place_constants::SOCK_LOCATION;
+use place_lib::{
+    commands::Command,
+    packet::{Block, Packet},
+    syscalls,
+};
 
 fn main() {
     let mut args = env::args().skip(1);
@@ -49,5 +57,50 @@ fn main() {
 
     let uid = syscalls::get_current_uid();
 
-    let header = HeaderBlock::new(uid, Command::SetByte);
+    let header = Block::HeaderBlock {
+        uid,
+        command: Command::SetByte,
+    };
+
+    let content = Block::SetByteContent { x, y, value };
+
+    let packet = match Packet::new(vec![header, content]).to_stdvec() {
+        Ok(value) => value,
+        Err(error) => {
+            eprintln!("Failed to serialize packet: {}", error);
+            return;
+        }
+    };
+
+    // Connect to backend
+    let mut stream = match UnixStream::connect(SOCK_LOCATION) {
+        Ok(value) => value,
+        Err(_error) => {
+            eprintln!("Failed to connect, is the server not running?");
+            return;
+        }
+    };
+
+    // Initialize crypt
+    let crypt = XChaCha20Poly1305::new(&[0u8; 32].into());
+    let mut nonce = XNonce::default();
+    if let Err(error) = stream.read_exact(&mut nonce) {
+        eprintln!("Failed to read from server: {}", error);
+        return;
+    }
+
+    // Encrypt packet
+    let ciphertext = match crypt.encrypt(&nonce, &*packet) {
+        Ok(value) => value,
+        Err(error) => {
+            eprintln!("Failed to encrypt packet: {}", error);
+            return;
+        }
+    };
+
+    // Send packet
+    if let Err(error) = stream.write_all(&ciphertext) {
+        eprintln!("Failed to write to server: {}", error);
+        return;
+    }
 }
