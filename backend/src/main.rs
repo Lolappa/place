@@ -64,7 +64,7 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
         };
     }
 
-    let packet = match Packet::try_from(
+    let packet = match Packet::from_bytes(
         if let Ok(value) = crypt.decrypt(&nonce, &ciphertext[..]) {
             value
         } else {

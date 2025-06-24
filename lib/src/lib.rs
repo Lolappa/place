@@ -34,7 +34,7 @@ pub mod packet {
     use std::ffi::OsString;
 
     use crc::{Algorithm, Crc, Digest};
-    use postcard::Result;
+    use postcard::{Error, Result as PostcardResult};
     use serde::{Deserialize, Serialize};
     use users::uid_t;
 
@@ -52,7 +52,7 @@ pub mod packet {
             &self.blocks
         }
 
-        pub fn from_bytes<'a>(s: &'a [u8]) -> Result<Packet> {
+        pub fn from_bytes<'a>(s: &'a [u8]) -> PostcardResult<Packet> {
             let mut blocks: Vec<Block> = Vec::new();
             let mut tail = s;
             let crc = Crc::<u32>::new(&CRC_ALG);
@@ -66,10 +66,17 @@ pub mod packet {
                 }
             }
 
+            if blocks.len() == 0 {
+                return Err(Error::SerdeDeCustom);
+            }
+            if !blocks[0].is_header_block() {
+                return Err(Error::SerdeDeCustom);
+            }
+
             Ok(Packet { blocks })
         }
 
-        pub fn to_stdvec(&self) -> Result<Vec<u8>> {
+        pub fn to_stdvec(&self) -> PostcardResult<Vec<u8>> {
             let mut out = Vec::<u8>::new();
             for block in &self.blocks {
                 out.extend_from_slice(&block.to_stdvec()?);
@@ -89,12 +96,54 @@ pub mod packet {
         pub fn take_from_bytes<'a>(
             s: &'a [u8],
             digest: Digest<'a, u32>,
-        ) -> Result<(Self, &'a [u8])> {
+        ) -> PostcardResult<(Self, &'a [u8])> {
             postcard::take_from_bytes_crc32(s, digest)
         }
 
-        pub fn to_stdvec(&self) -> Result<Vec<u8>> {
+        pub fn to_stdvec(&self) -> PostcardResult<Vec<u8>> {
             postcard::to_stdvec_crc32(&self, Crc::<u32>::new(&CRC_ALG).digest())
+        }
+    }
+
+    impl Block {
+        /// Returns `true` if the block is [`HeaderBlock`].
+        ///
+        /// [`HeaderBlock`]: Block::HeaderBlock
+        #[must_use]
+        pub fn is_header_block(&self) -> bool {
+            matches!(self, Self::HeaderBlock { .. })
+        }
+
+        /// Returns `true` if the block is [`SetByteContent`].
+        ///
+        /// [`SetByteContent`]: Block::SetByteContent
+        #[must_use]
+        pub fn is_set_byte_content(&self) -> bool {
+            matches!(self, Self::SetByteContent { .. })
+        }
+
+        /// Returns `true` if the block is [`OsString`].
+        ///
+        /// [`OsString`]: Block::OsString
+        #[must_use]
+        pub fn is_os_string(&self) -> bool {
+            matches!(self, Self::OsString(..))
+        }
+
+        pub fn as_os_string(&self) -> Option<&OsString> {
+            if let Self::OsString(v) = self {
+                Some(v)
+            } else {
+                None
+            }
+        }
+
+        pub fn try_into_os_string(self) -> Result<OsString, Self> {
+            if let Self::OsString(v) = self {
+                Ok(v)
+            } else {
+                Err(self)
+            }
         }
     }
 }
