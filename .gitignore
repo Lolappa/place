@@ -1,3 +1,4 @@
 /target
 /local.config
+/config/local.toml
 /constants/constants.rs
