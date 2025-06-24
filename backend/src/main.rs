@@ -2,31 +2,38 @@ use chacha20poly1305::{
     aead::{Aead, OsRng},
     AeadCore, ChaCha20Poly1305, KeyInit,
 };
+use place_backend::*;
 use place_constants::*;
-use place_lib::packet::Packet;
+use place_lib::{commands::Command, packet::Packet};
 use std::{
-    ffi::{OsStr, OsString},
+    collections::HashMap,
+    ffi::OsString,
     fs::File,
-    io::prelude::*,
-    io::{Error, ErrorKind, Result, SeekFrom},
+    io::{Read, Write},
     os::unix::net::{UnixListener, UnixStream},
     path::Path,
+    sync::{Arc, Mutex},
     thread,
+    time::{Duration, SystemTime, SystemTimeError},
 };
 use users::uid_t;
 
 fn main() {
     create_data();
-    write_byte(4, 31, 50);
-    create_file((2, 2), (4, 4), &OsString::from("tst"));
-    create_file((2, 2), (0, 0), &OsString::from("empty"));
+    // NOTE: debug actions
+    let _ = actions::write_byte(4, 31, 50);
+    let _ = actions::create_file((2, 2), (4, 4), &OsString::from("tst"));
+    let _ = actions::create_file((2, 2), (0, 0), &OsString::from("empty"));
+
+    let timestamps = Arc::new(Mutex::new(HashMap::<uid_t, SystemTime>::new()));
     if let Ok(listener) = UnixListener::bind(SOCK_LOCATION) {
         // accept connections and process them, spawning a new thread for each one
         for stream in listener.incoming() {
             match stream {
                 Ok(stream) => {
                     /* connection succeeded */
-                    thread::spawn(|| handle_client(stream));
+                    let timestamps = Arc::clone(&timestamps);
+                    thread::spawn(move || handle_client(stream, &timestamps));
                 }
                 Err(_err) => { /* connection failed */ }
             }
@@ -34,9 +41,9 @@ fn main() {
     }
 }
 
-fn handle_client(mut stream: UnixStream) {
+fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, SystemTime>>) {
     let crypt = ChaCha20Poly1305::new(&[0u8; 32].into());
-    todo!("use include_bytes!() here");
+    // TODO: use include_bytes!() or something here
     let nonce = ChaCha20Poly1305::generate_nonce(OsRng);
 
     if let Err(err) = stream.write_all(&nonce) {
@@ -68,7 +75,102 @@ fn handle_client(mut stream: UnixStream) {
         Ok(value) => value,
         Err(_) => todo!(),
     };
+
+    let uid = packet.header().uid();
+    if let Ok(can_change) = can_do_change(uid, timestamps) {
+        if can_change {
+            match packet.header().command() {
+                Command::SetByte => {
+                    if let Some(block) = packet.blocks().get(0) {
+                        let mut slice = block.content();
+                        if slice.len() != size_of::<usize>() + size_of::<usize>() + 1 {
+                            todo!()
+                        }
+
+                        let x = {
+                            let tmp: &[u8];
+                            (tmp, slice) = slice.split_at(size_of::<usize>());
+                            usize::from_ne_bytes(tmp.try_into().unwrap())
+                        };
+
+                        let y = {
+                            let tmp: &[u8];
+                            (tmp, slice) = slice.split_at(size_of::<usize>());
+                            usize::from_ne_bytes(tmp.try_into().unwrap())
+                        };
+
+                        let value = slice[0];
+                        if let Err(err) = actions::write_byte(x, y, value) {
+                            todo!()
+                        };
+                    }
+                }
+                Command::CreateFile => {}
+                Command::RemoveFile => {}
+                Command::RenameFile => {}
+                Command::MoveFile => {}
+            }
+            set_timestamp(uid, timestamps);
+        }
+    }
 }
+
+fn can_do_change(
+    userid: uid_t,
+    timestamps: &Mutex<HashMap<uid_t, SystemTime>>,
+) -> Result<bool, SystemTimeError> {
+    if let Ok(timestamps) = timestamps.lock() {
+        if let Some(timestamp) = timestamps.get(&userid) {
+            match timestamp.elapsed() {
+                Ok(time) => Ok(time > Duration::from_secs(300)),
+                Err(error) => Err(error),
+            }
+        } else {
+            Ok(true)
+        }
+    } else {
+        todo!()
+    }
+}
+
+fn set_timestamp(userid: uid_t, timestamps: &Mutex<HashMap<uid_t, SystemTime>>) {
+    if let Ok(mut timestamps) = timestamps.lock() {
+        if let Some(timestamp) = timestamps.get_mut(&userid) {
+            *timestamp = SystemTime::now();
+        };
+    } else {
+        todo!()
+    }
+    // TODO: Save hashmap in case the server crashes
+}
+
+fn create_data() {
+    let data_file = Path::new(LOCATION).join("data/data");
+
+    if data_file.exists() != true {
+        let mut data_file = File::create(data_file).unwrap();
+        let _ = data_file.write_all(&[0u8; SIZE_X * SIZE_Y]);
+    }
+}
+/*
+fn read_vec(mut stream: &UnixStream) -> Result<Vec<u8>> {
+    // Get length of Vec
+    let mut buf = [0u8; size_of::<usize>()];
+    stream.read_exact(&mut buf)?;
+    let length = usize::from_ne_bytes(buf);
+
+    let mut vector: Vec<u8> = vec![];
+    // Get Vec from stream
+    let mut buf = [0u8; 32];
+    loop {
+        let len = stream.read(&mut buf)?;
+        vector.extend_from_slice(&buf[..len]);
+        if length == vector.len() {
+            break;
+        };
+    }
+    Ok(vector)
+}*/
 
 /*
 fn handle_client(mut stream: UnixStream) {
@@ -238,77 +340,3 @@ fn handle_client(mut stream: UnixStream) {
     }
 }
 */
-
-fn can_do_change(token: [u8; 16], userid: uid_t) -> bool {
-    todo!()
-}
-
-fn set_timestamp(userid: u32) {
-    todo!()
-}
-
-fn create_data() {
-    let data_file = Path::new(LOCATION).join("data/data");
-
-    if data_file.exists() != true {
-        let mut data_file = File::create(data_file).unwrap();
-        let _ = data_file.write_all(&[0u8; SIZE_X * SIZE_Y]);
-    }
-}
-
-fn read_vec(mut stream: &UnixStream) -> Result<Vec<u8>> {
-    // Get length of Vec
-    let mut buf = [0u8; size_of::<usize>()];
-    stream.read_exact(&mut buf)?;
-    let length = usize::from_ne_bytes(buf);
-
-    let mut vector: Vec<u8> = vec![];
-    // Get Vec from stream
-    let mut buf = [0u8; 32];
-    loop {
-        let len = stream.read(&mut buf)?;
-        vector.extend_from_slice(&buf[..len]);
-        if length == vector.len() {
-            break;
-        };
-    }
-    Ok(vector)
-}
-
-fn write_byte(x: usize, y: usize, value: u8) -> Result<()> {
-    if x >= SIZE_X || y >= SIZE_Y {
-        return Err(Error::new(
-            ErrorKind::InvalidInput,
-            "position out of bounds",
-        ));
-    }
-    let mut data_file = File::options()
-        .write(true)
-        .open(Path::new(LOCATION).join("data/data"))
-        .unwrap();
-    data_file.seek(SeekFrom::Start((y * SIZE_X + x).try_into().unwrap()))?;
-    data_file.write(&[value])?;
-    Ok(())
-}
-
-fn create_file(pos: (usize, usize), size: (usize, usize), name: &OsStr) -> Result<()> {
-    if pos.0 >= SIZE_X || pos.1 >= SIZE_Y {
-        return Err(Error::new(
-            ErrorKind::InvalidInput,
-            "start position out of bounds",
-        ));
-    }
-    if pos.0 + size.0 >= SIZE_X || pos.1 + size.1 >= SIZE_Y {
-        return Err(Error::new(
-            ErrorKind::InvalidInput,
-            "end position out of bounds",
-        ));
-    }
-
-    let mut file = File::create_new(Path::new(LOCATION).join("data/files").join(name))?;
-    file.write(&pos.0.to_ne_bytes())?;
-    file.write(&pos.1.to_ne_bytes())?;
-    file.write(&size.0.to_ne_bytes())?;
-    file.write(&size.1.to_ne_bytes())?;
-    Ok(())
-}

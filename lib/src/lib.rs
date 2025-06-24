@@ -29,6 +29,8 @@ pub mod packet {
     use crc::{Algorithm, Crc};
     use users::uid_t;
 
+    use crate::commands::Command;
+
     pub const CRC_ALG: Algorithm<u32> = crc::CRC_24_OPENPGP;
 
     pub struct Packet {
@@ -99,9 +101,10 @@ pub mod packet {
         }
     }
 
-    const HEADER_LENGTH: usize = size_of::<uid_t>();
+    const HEADER_LENGTH: usize = size_of::<uid_t>() + 1;
     pub struct HeaderBlock {
         uid: uid_t,
+        command: Command,
     }
 
     impl HeaderBlock {
@@ -111,6 +114,10 @@ pub mod packet {
 
         pub fn uid(&self) -> u32 {
             self.uid
+        }
+
+        pub fn command(&self) -> &Command {
+            &self.command
         }
     }
 
@@ -129,7 +136,13 @@ pub mod packet {
                     uid_t::from_ne_bytes(tmp.try_into().unwrap())
                 };
 
-                Ok(HeaderBlock { uid })
+                let command: Command = {
+                    let tmp: &[u8];
+                    (tmp, slice) = slice.split_at(1);
+                    Command::try_from(u8::from_ne_bytes(tmp.try_into().unwrap()))?
+                };
+
+                Ok(HeaderBlock { uid, command })
             }
         }
     }
@@ -139,6 +152,20 @@ pub mod packet {
 
         fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
             Self::try_from(Block::try_from(value)?)
+        }
+    }
+
+    impl From<HeaderBlock> for Vec<u8> {
+        fn from(value: HeaderBlock) -> Self {
+            let mut out: Self = Self::with_capacity(value.len());
+
+            out.extend_from_slice(&HEADER_LENGTH.to_ne_bytes());
+            out.push(BlockType::Header as u8);
+            out.extend_from_slice(&value.uid.to_ne_bytes());
+            out.push(value.command as u8);
+            out.extend_from_slice(&Crc::<u32>::new(&CRC_ALG).checksum(&out[..]).to_ne_bytes());
+
+            out
         }
     }
 
@@ -211,7 +238,7 @@ pub mod packet {
     }
 
     pub enum BlockType {
-        Meta,
+        Header,
         String,
     }
 
@@ -220,7 +247,7 @@ pub mod packet {
 
         fn try_from(value: u8) -> Result<Self, Self::Error> {
             match value {
-                val if val == Self::Meta as u8 => Ok(Self::Meta),
+                val if val == Self::Header as u8 => Ok(Self::Header),
                 val if val == Self::String as u8 => Ok(Self::String),
                 _ => Err(()),
             }
