@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     fs::File,
-    io::Write as _,
+    io::{self, Write as _},
     path::Path,
     sync::Mutex,
     time::{Duration, SystemTime, SystemTimeError},
@@ -12,7 +12,7 @@ use users::uid_t;
 
 pub mod actions;
 
-fn can_do_change(
+pub fn can_do_change(
     userid: uid_t,
     timestamps: &Mutex<HashMap<uid_t, SystemTime>>,
 ) -> Result<bool, SystemTimeError> {
@@ -30,7 +30,7 @@ fn can_do_change(
     }
 }
 
-fn set_timestamp(userid: uid_t, timestamps: &Mutex<HashMap<uid_t, SystemTime>>) {
+pub fn set_timestamp(userid: uid_t, timestamps: &Mutex<HashMap<uid_t, SystemTime>>) {
     if let Ok(mut timestamps) = timestamps.lock() {
         timestamps.insert(userid, SystemTime::now());
     } else {
@@ -40,11 +40,13 @@ fn set_timestamp(userid: uid_t, timestamps: &Mutex<HashMap<uid_t, SystemTime>>) 
     // TODO: Save hashmap in case the server crashes
 }
 
-fn create_data() {
+pub fn create_data(force: bool) -> io::Result<()> {
     let data_file = Path::new(LOCATION).join("data/data");
 
-    if data_file.exists() != true {
-        let mut data_file = File::create(data_file).unwrap();
-        let _ = data_file.write_all(&[0u8; SIZE_X * SIZE_Y]);
+    if data_file.exists() == false || force {
+        let mut data_file = File::create(data_file)?;
+        data_file.write_all(&[0u8; SIZE_X * SIZE_Y])?;
     }
+
+    Ok(())
 }

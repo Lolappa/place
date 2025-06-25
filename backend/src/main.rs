@@ -14,16 +14,15 @@ use std::{
     ffi::OsString,
     io::{Read, Write},
     os::unix::net::{UnixListener, UnixStream},
-    path::Path,
     sync::{Arc, Mutex},
     thread,
-    time::{Duration, SystemTime, SystemTimeError},
+    time::SystemTime,
 };
 use users::uid_t;
 
 fn main() {
-    create_data();
     // NOTE: debug actions
+    let _ = create_data(false);
     let _ = actions::write_byte(Position::new(3, 3), 50);
     let _ = actions::create_file(
         File::new(Position::new(1, 1), Size::new(5, 5)),
