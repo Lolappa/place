@@ -1,6 +1,6 @@
 use chacha20poly1305::{
     aead::{Aead, OsRng},
-    AeadCore, ChaCha20Poly1305, KeyInit, XChaCha20Poly1305,
+    AeadCore, KeyInit, XChaCha20Poly1305,
 };
 use place_backend::*;
 use place_constants::*;
@@ -29,24 +29,26 @@ fn main() {
     let _ = actions::create_file((2, 2), (0, 0), &OsString::from("empty"));
 
     let timestamps = Arc::new(Mutex::new(HashMap::<uid_t, SystemTime>::new()));
-    if let Ok(listener) = UnixListener::bind(SOCK_LOCATION) {
-        // accept connections and process them, spawning a new thread for each one
-        for stream in listener.incoming() {
-            match stream {
-                Ok(stream) => {
-                    /* connection succeeded */
-                    let timestamps = Arc::clone(&timestamps);
-                    thread::spawn(move || handle_client(stream, &timestamps));
+    match UnixListener::bind(SOCK_LOCATION) {
+        Ok(listener) => {
+            for stream in listener.incoming() {
+                match stream {
+                    Ok(stream) => {
+                        /* connection succeeded */
+                        let timestamps = Arc::clone(&timestamps);
+                        thread::spawn(move || handle_client(stream, &timestamps));
+                    }
+                    Err(_err) => { /* connection failed */ }
                 }
-                Err(_err) => { /* connection failed */ }
             }
         }
+        Err(error) => eprintln!("Failed to bind to socket: {}", error),
     }
+    println!("exiting");
 }
 
 fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, SystemTime>>) {
-    let crypt = XChaCha20Poly1305::new(&[0u8; 32].into());
-    // TODO: use include_bytes!() or something here
+    let crypt = XChaCha20Poly1305::new(CRYPT_KEY.into());
     let nonce = XChaCha20Poly1305::generate_nonce(OsRng);
 
     if let Err(err) = stream.write_all(&nonce) {
@@ -86,6 +88,7 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
     };
 
     if let Ok(can_change) = can_do_change(uid, timestamps) {
+        dbg!(can_change);
         if can_change {
             match command {
                 Command::SetByte => {
@@ -114,7 +117,7 @@ fn can_do_change(
     if let Ok(timestamps) = timestamps.lock() {
         if let Some(timestamp) = timestamps.get(&userid) {
             match timestamp.elapsed() {
-                Ok(time) => Ok(time > Duration::from_secs(300)),
+                Ok(time) => Ok(time > Duration::from_secs(INTERVAL)),
                 Err(error) => Err(error),
             }
         } else {
@@ -127,12 +130,11 @@ fn can_do_change(
 
 fn set_timestamp(userid: uid_t, timestamps: &Mutex<HashMap<uid_t, SystemTime>>) {
     if let Ok(mut timestamps) = timestamps.lock() {
-        if let Some(timestamp) = timestamps.get_mut(&userid) {
-            *timestamp = SystemTime::now();
-        };
+        timestamps.insert(userid, SystemTime::now());
     } else {
         todo!()
     }
+    dbg!(timestamps);
     // TODO: Save hashmap in case the server crashes
 }
 
