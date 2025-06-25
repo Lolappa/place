@@ -9,6 +9,7 @@ use chacha20poly1305::{aead::Aead, KeyInit, XChaCha20Poly1305, XNonce};
 use place_constants::{CRYPT_KEY, SOCK_LOCATION};
 use place_lib::{
     commands::Command,
+    file::Position,
     packet::{Block, Packet},
     syscalls,
 };
@@ -42,6 +43,8 @@ fn main() {
         return;
     };
 
+    let position = Position::new(x, y);
+
     let value: u8 = if let Some(value) = args.next() {
         match u8::from_str_radix(&value, 10) {
             Ok(value) => value,
@@ -62,7 +65,7 @@ fn main() {
         command: Command::SetByte,
     };
 
-    let content = Block::SetByteContent { x, y, value };
+    let content = Block::SetByteContent { position, value };
 
     let packet = match Packet::new(vec![header, content]).to_stdvec() {
         Ok(value) => value,

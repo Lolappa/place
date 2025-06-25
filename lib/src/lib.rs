@@ -1,4 +1,4 @@
-#[allow(unused)]
+pub mod file;
 pub mod syscalls;
 
 pub mod commands {
@@ -38,7 +38,7 @@ pub mod packet {
     use serde::{Deserialize, Serialize};
     use users::uid_t;
 
-    use crate::commands::Command;
+    use crate::{commands::Command, file::Position};
 
     pub const CRC_ALG: Algorithm<u32> = crc::CRC_24_OPENPGP;
 
@@ -92,7 +92,7 @@ pub mod packet {
     #[derive(Serialize, Deserialize, Clone)]
     pub enum Block {
         HeaderBlock { uid: uid_t, command: Command },
-        SetByteContent { x: usize, y: usize, value: u8 },
+        SetByteContent { position: Position, value: u8 },
         OsString(OsString),
     }
 

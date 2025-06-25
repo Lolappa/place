@@ -6,12 +6,12 @@ use place_backend::*;
 use place_constants::*;
 use place_lib::{
     commands::Command,
+    file::{File, Position, Size},
     packet::{Block, Packet},
 };
 use std::{
     collections::HashMap,
     ffi::OsString,
-    fs::File,
     io::{Read, Write},
     os::unix::net::{UnixListener, UnixStream},
     path::Path,
@@ -24,9 +24,15 @@ use users::uid_t;
 fn main() {
     create_data();
     // NOTE: debug actions
-    let _ = actions::write_byte(4, 31, 50);
-    let _ = actions::create_file((2, 2), (4, 4), &OsString::from("tst"));
-    let _ = actions::create_file((2, 2), (0, 0), &OsString::from("empty"));
+    let _ = actions::write_byte(Position::new(3, 3), 50);
+    let _ = actions::create_file(
+        File::new(Position::new(1, 1), Size::new(5, 5)),
+        &OsString::from("tst"),
+    );
+    let _ = actions::create_file(
+        File::new(Position::new(1, 1), Size::new(0, 0)),
+        &OsString::from("empty"),
+    );
 
     let timestamps = Arc::new(Mutex::new(HashMap::<uid_t, SystemTime>::new()));
     match UnixListener::bind(SOCK_LOCATION) {
@@ -92,8 +98,9 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
         if can_change {
             match command {
                 Command::SetByte => {
-                    if let Some(Block::SetByteContent { x, y, value }) = packet.blocks().get(1) {
-                        if let Err(err) = actions::write_byte(*x, *y, *value) {
+                    if let Some(Block::SetByteContent { position, value }) = packet.blocks().get(1)
+                    {
+                        if let Err(err) = actions::write_byte(*position, *value) {
                             todo!()
                         };
                     } else {
@@ -110,42 +117,6 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
     }
 }
 
-fn can_do_change(
-    userid: uid_t,
-    timestamps: &Mutex<HashMap<uid_t, SystemTime>>,
-) -> Result<bool, SystemTimeError> {
-    if let Ok(timestamps) = timestamps.lock() {
-        if let Some(timestamp) = timestamps.get(&userid) {
-            match timestamp.elapsed() {
-                Ok(time) => Ok(time > Duration::from_secs(INTERVAL)),
-                Err(error) => Err(error),
-            }
-        } else {
-            Ok(true)
-        }
-    } else {
-        todo!()
-    }
-}
-
-fn set_timestamp(userid: uid_t, timestamps: &Mutex<HashMap<uid_t, SystemTime>>) {
-    if let Ok(mut timestamps) = timestamps.lock() {
-        timestamps.insert(userid, SystemTime::now());
-    } else {
-        todo!()
-    }
-    dbg!(timestamps);
-    // TODO: Save hashmap in case the server crashes
-}
-
-fn create_data() {
-    let data_file = Path::new(LOCATION).join("data/data");
-
-    if data_file.exists() != true {
-        let mut data_file = File::create(data_file).unwrap();
-        let _ = data_file.write_all(&[0u8; SIZE_X * SIZE_Y]);
-    }
-}
 /*
 fn read_vec(mut stream: &UnixStream) -> Result<Vec<u8>> {
     // Get length of Vec

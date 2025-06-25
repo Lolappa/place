@@ -3,7 +3,7 @@ use std::ffi::{OsStr, OsString};
 use std::io::{BufRead, Read, Result, Write};
 use std::os::unix::net::UnixStream;
 
-use place_constants::{SOCK_LOCATION, TOKEN};
+use place_constants::SOCK_LOCATION;
 use place_lib::commands::Command;
 use users::get_current_uid;
 
@@ -50,7 +50,6 @@ fn main() {
 fn mkfile((x, y): (usize, usize), (dx, dy): (usize, usize), name: &OsStr) -> Result<()> {
     let mut stream = UnixStream::connect(SOCK_LOCATION)?;
 
-    stream.write_all(TOKEN.as_bytes())?;
     stream.write_all(&get_current_uid().to_ne_bytes())?;
     stream.write_all(&[Command::CreateFile as u8])?;
 
