@@ -7,10 +7,9 @@ pub mod commands {
     #[derive(Serialize, Deserialize, Clone, Copy)]
     pub enum Command {
         SetByte = 1,
-        CreateFile = 2,
+        CreateFile = 2, // Also does moving
         RemoveFile = 3,
         RenameFile = 4,
-        MoveFile = 5,
     }
 
     impl TryFrom<u8> for Command {
@@ -23,7 +22,6 @@ pub mod commands {
                 _ if value == CreateFile as u8 => Ok(CreateFile),
                 _ if value == RemoveFile as u8 => Ok(RemoveFile),
                 _ if value == RenameFile as u8 => Ok(RenameFile),
-                _ if value == MoveFile as u8 => Ok(MoveFile),
                 _ => Err(()),
             }
         }
@@ -38,7 +36,10 @@ pub mod packet {
     use serde::{Deserialize, Serialize};
     use users::uid_t;
 
-    use crate::{commands::Command, file::Position};
+    use crate::{
+        commands::Command,
+        file::{File, Position},
+    };
 
     pub const CRC_ALG: Algorithm<u32> = crc::CRC_24_OPENPGP;
 
@@ -93,7 +94,8 @@ pub mod packet {
     pub enum Block {
         HeaderBlock { uid: uid_t, command: Command },
         SetByteContent { position: Position, value: u8 },
-        OsString(OsString),
+        FileSize(File),
+        FileName(OsString),
     }
 
     impl Block {
@@ -124,24 +126,48 @@ pub mod packet {
             matches!(self, Self::SetByteContent { .. })
         }
 
-        /// Returns `true` if the block is [`OsString`].
+        /// Returns `true` if the block is [`FileSize`].
         ///
-        /// [`OsString`]: Block::OsString
+        /// [`FileSize`]: Block::FileSize
         #[must_use]
-        pub fn is_os_string(&self) -> bool {
-            matches!(self, Self::OsString(..))
+        pub fn is_file_size(&self) -> bool {
+            matches!(self, Self::FileSize(..))
         }
 
-        pub fn as_os_string(&self) -> Option<&OsString> {
-            if let Self::OsString(v) = self {
+        pub fn as_file_size(&self) -> Option<&File> {
+            if let Self::FileSize(v) = self {
                 Some(v)
             } else {
                 None
             }
         }
 
-        pub fn try_into_os_string(self) -> Result<OsString, Self> {
-            if let Self::OsString(v) = self {
+        pub fn try_into_file_size(self) -> Result<File, Self> {
+            if let Self::FileSize(v) = self {
+                Ok(v)
+            } else {
+                Err(self)
+            }
+        }
+
+        /// Returns `true` if the block is [`FileName`].
+        ///
+        /// [`FileName`]: Block::FileName
+        #[must_use]
+        pub fn is_file_name(&self) -> bool {
+            matches!(self, Self::FileName(..))
+        }
+
+        pub fn as_file_name(&self) -> Option<&OsString> {
+            if let Self::FileName(v) = self {
+                Some(v)
+            } else {
+                None
+            }
+        }
+
+        pub fn try_into_file_name(self) -> Result<OsString, Self> {
+            if let Self::FileName(v) = self {
                 Ok(v)
             } else {
                 Err(self)

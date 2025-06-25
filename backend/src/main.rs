@@ -9,6 +9,7 @@ use place_lib::{
     file::{File, Position, Size},
     packet::{Block, Packet},
 };
+use serde::de::value;
 use std::{
     collections::HashMap,
     ffi::OsString,
@@ -92,27 +93,55 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
         panic!()
     };
 
-    if let Ok(can_change) = can_do_change(uid, timestamps) {
-        dbg!(can_change);
-        if can_change {
-            match command {
-                Command::SetByte => {
-                    if let Some(Block::SetByteContent { position, value }) = packet.blocks().get(1)
-                    {
-                        if let Err(err) = actions::write_byte(*position, *value) {
-                            todo!()
-                        };
-                    } else {
+    let can_change = match can_do_change(uid, timestamps) {
+        Ok(value) => value,
+        Err(err) => todo!(),
+    };
+    dbg!(can_change);
+    if can_change {
+        match command {
+            Command::SetByte => {
+                if let Some(Block::SetByteContent { position, value }) = packet.blocks().get(1) {
+                    if let Err(err) = actions::write_byte(*position, *value) {
                         todo!()
-                    }
+                    };
+                } else {
+                    todo!()
                 }
-                Command::CreateFile => {}
-                Command::RemoveFile => {}
-                Command::RenameFile => {}
-                Command::MoveFile => {}
             }
-            set_timestamp(uid, timestamps);
+            Command::CreateFile => {
+                let file = match packet.blocks().get(1) {
+                    Some(Block::FileSize(value)) => value,
+                    _ => todo!(),
+                };
+                let name = match packet.blocks().get(2) {
+                    Some(Block::FileName(value)) => value,
+                    _ => todo!(),
+                };
+                if let Err(err) = actions::create_file(*file, name) {
+                    todo!();
+                };
+            }
+            Command::RemoveFile => {
+                let name = match packet.blocks().get(2) {
+                    Some(Block::FileName(value)) => value,
+                    _ => todo!(),
+                };
+                todo!()
+            }
+            Command::RenameFile => {
+                let name = match packet.blocks().get(2) {
+                    Some(Block::FileName(value)) => value,
+                    _ => todo!(),
+                };
+                let name = match packet.blocks().get(2) {
+                    Some(Block::FileName(value)) => value,
+                    _ => todo!(),
+                };
+                todo!()
+            }
         }
+        set_timestamp(uid, timestamps);
     }
 }
 
