@@ -75,14 +75,14 @@ fn main() {
     // Connect to backend
     let mut stream = match UnixStream::connect(SOCK_LOCATION) {
         Ok(value) => value,
-        Err(_error) => {
-            eprintln!("Failed to connect, is the server not running?");
+        Err(error) => {
+            eprintln!("Failed to connect: {}", error);
             return;
         }
     };
 
     // Initialize crypt
-    let crypt = XChaCha20Poly1305::new(&[0u8; 32].into());
+    let crypt = XChaCha20Poly1305::new(&[0u8; 32].into()); // TODO: include key from somewhere
     let mut nonce = XNonce::default();
     if let Err(error) = stream.read_exact(&mut nonce) {
         eprintln!("Failed to read from server: {}", error);
@@ -99,6 +99,10 @@ fn main() {
     };
 
     // Send packet
+    if let Err(error) = stream.write_all(&ciphertext.len().to_ne_bytes()) {
+        eprintln!("Failed to write to server: {}", error);
+        return;
+    }
     if let Err(error) = stream.write_all(&ciphertext) {
         eprintln!("Failed to write to server: {}", error);
         return;
