@@ -11,6 +11,8 @@ macro_rules! out_dir {
 pub const INTERVAL: u64 = include!(out_dir!("/interval"));
 pub const SIZE_X: usize = include!(out_dir!("/size_x"));
 pub const SIZE_Y: usize = include!(out_dir!("/size_y"));
-pub const LOCATION: &str = include!(out_dir!("/location"));
-pub const SOCK_LOCATION: &str = concat!(include!(out_dir!("/location")), "/.sock",);
-pub const CRYPT_KEY: &[u8; 32] = include_bytes!(out_dir!("/crypt_key"));
+pub const LOCATION: &'static str = include!(out_dir!("/location"));
+pub const SOCK_LOCATION: &'static str = concat!(include!(out_dir!("/location")), "/.sock",);
+pub const TIMESTAMP_LOCATION: &'static str =
+    concat!(include!(out_dir!("/location")), "/backend/user_timestamps",);
+pub const CRYPT_KEY: &'static [u8; 32] = include_bytes!(out_dir!("/crypt_key"));

@@ -5,7 +5,6 @@ default:
 	mkdir -p target/place/place
 	
 	mkdir -p target/place/backend
-	touch target/place/backend/user_timestamps
 	cp target/debug/place_backend target/place/backend
 	
 	mkdir -p target/place/data

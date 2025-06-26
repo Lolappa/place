@@ -1,13 +1,15 @@
 use std::{
     collections::HashMap,
-    fs::File,
+    fs::{self, File},
     io::{self, Write as _},
-    path::Path,
+    path::{Path, PathBuf},
     sync::Mutex,
     time::{Duration, SystemTime, SystemTimeError},
 };
 
-use place_constants::{INTERVAL, LOCATION, SIZE_X, SIZE_Y};
+use crc::Crc;
+use place_constants::{INTERVAL, LOCATION, SIZE_X, SIZE_Y, TIMESTAMP_LOCATION};
+use place_lib::packet::CRC_ALG;
 use users::uid_t;
 
 pub mod actions;
@@ -30,14 +32,23 @@ pub fn can_do_change(
     }
 }
 
-pub fn set_timestamp(userid: uid_t, timestamps: &Mutex<HashMap<uid_t, SystemTime>>) {
+pub async fn set_timestamp(
+    userid: uid_t,
+    timestamps: &Mutex<HashMap<uid_t, SystemTime>>,
+) -> io::Result<()> {
     if let Ok(mut timestamps) = timestamps.lock() {
         timestamps.insert(userid, SystemTime::now());
     } else {
         todo!()
     }
     dbg!(timestamps);
-    // TODO: Save hashmap in case the server crashes
+
+    fs::write(
+        Path::new(TIMESTAMP_LOCATION),
+        &postcard::to_stdvec_crc32(timestamps, Crc::<u32>::new(&CRC_ALG).digest()).unwrap(),
+    )?;
+
+    Ok(())
 }
 
 pub fn create_data(force: bool) -> io::Result<()> {

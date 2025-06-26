@@ -1,6 +1,6 @@
 use chacha20poly1305::{
     aead::{Aead, OsRng},
-    AeadCore, KeyInit, XChaCha20Poly1305,
+    AeadCore, KeyInit,
 };
 use place_backend::*;
 use place_constants::*;
@@ -9,7 +9,6 @@ use place_lib::{
     file::{File, Position, Size},
     packet::{Block, Packet},
 };
-use serde::de::value;
 use std::{
     collections::HashMap,
     ffi::OsString,
@@ -54,8 +53,8 @@ fn main() {
 }
 
 fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, SystemTime>>) {
-    let crypt = XChaCha20Poly1305::new(CRYPT_KEY.into());
-    let nonce = XChaCha20Poly1305::generate_nonce(OsRng);
+    let crypt = Crypt::new(CRYPT_KEY.into());
+    let nonce = Crypt::generate_nonce(OsRng);
 
     if let Err(err) = stream.write_all(&nonce) {
         todo!()
@@ -144,192 +143,3 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
         set_timestamp(uid, timestamps);
     }
 }
-
-/*
-fn read_vec(mut stream: &UnixStream) -> Result<Vec<u8>> {
-    // Get length of Vec
-    let mut buf = [0u8; size_of::<usize>()];
-    stream.read_exact(&mut buf)?;
-    let length = usize::from_ne_bytes(buf);
-
-    let mut vector: Vec<u8> = vec![];
-    // Get Vec from stream
-    let mut buf = [0u8; 32];
-    loop {
-        let len = stream.read(&mut buf)?;
-        vector.extend_from_slice(&buf[..len]);
-        if length == vector.len() {
-            break;
-        };
-    }
-    Ok(vector)
-}*/
-
-/*
-fn handle_client(mut stream: UnixStream) {
-    let mut buf = [0u8; size_of::<[u8; 16]>() + size_of::<uid_t>() + 1];
-
-    if let Err(err) = stream.read_exact(&mut buf) {
-        todo!()
-    } else {
-        // Get values from buffer
-        let slice = &buf[..];
-        let (token, slice): ([u8; 16], &[u8]) = {
-            let (temp, slice) = slice.split_at(16);
-            (temp.try_into().unwrap(), slice)
-        };
-        let (userid, slice): (uid_t, &[u8]) = {
-            let (temp, slice) = slice.split_at(size_of::<u32>());
-            (u32::from_ne_bytes(temp.try_into().unwrap()), slice)
-        };
-        let command = if let Ok(value) = slice[0].try_into() {
-            value
-        } else {
-            todo!();
-        };
-
-        if can_do_change(token, userid) {
-            // Ask client for more information about request
-            if let Err(err) = stream.write(&[0]) {
-                todo!();
-            };
-            use Command::*;
-            match command {
-                SetByte => {
-                    let mut buf = [0u8; 2 * size_of::<usize>() + 1];
-                    if let Ok(len) = stream.read(&mut buf) {
-                        if len == buf.len() {
-                            let slice = &buf[..];
-                            let (x, slice) = {
-                                let (temp, slice) = slice.split_at(size_of::<usize>());
-                                (usize::from_ne_bytes(temp.try_into().unwrap()), slice)
-                            };
-                            let (y, slice) = {
-                                let (temp, slice) = slice.split_at(size_of::<usize>());
-                                (usize::from_ne_bytes(temp.try_into().unwrap()), slice)
-                            };
-                            let byte = slice[0];
-
-                            if let Err(err) = write_byte(x, y, byte) {
-                                todo!()
-                            } else {
-                                set_timestamp(userid);
-                                if let Err(err) = stream.write(&[0]) {
-                                    todo!()
-                                }
-                            }
-                        }
-                    }
-                }
-                CreateFile => {
-                    let mut buf = [0u8; 4 * size_of::<usize>()];
-                    if let Ok(len) = stream.read(&mut buf) {
-                        if len == buf.len() {
-                            let slice = &buf[..];
-                            let (x, slice) = {
-                                let (temp, slice) = slice.split_at(size_of::<usize>());
-                                (usize::from_ne_bytes(temp.try_into().unwrap()), slice)
-                            };
-                            let (y, slice) = {
-                                let (temp, slice) = slice.split_at(size_of::<usize>());
-                                (usize::from_ne_bytes(temp.try_into().unwrap()), slice)
-                            };
-                            let (dx, slice) = {
-                                let (temp, slice) = slice.split_at(size_of::<usize>());
-                                (usize::from_ne_bytes(temp.try_into().unwrap()), slice)
-                            };
-                            let (dy, _slice) = {
-                                let (temp, slice) = slice.split_at(size_of::<usize>());
-                                (usize::from_ne_bytes(temp.try_into().unwrap()), slice)
-                            };
-
-                            if let Err(err) = stream.write(&[0]) {
-                                todo!()
-                            } else {
-                                let filename: OsString;
-                                if let Ok(vec) = read_vec(&stream) {
-                                    filename = OsString::from_vec(vec);
-                                } else {
-                                    todo!()
-                                }
-
-                                if let Err(err) = create_file((x, y), (dx, dy), &filename) {
-                                    todo!()
-                                } else {
-                                    set_timestamp(userid);
-                                    if let Err(err) = stream.write(&[0]) {
-                                        todo!()
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                RemoveFile => {
-                    let filename;
-                    if let Ok(vec) = read_vec(&stream) {
-                        filename = vec;
-                    } else {
-                        todo!()
-                    }
-                    let filename = OsString::from_vec(filename);
-                    //??
-                    todo!()
-                }
-                RenameFile => {
-                    let old_filename;
-                    if let Ok(vec) = read_vec(&stream) {
-                        old_filename = vec;
-                    } else {
-                        todo!()
-                    }
-                    let old_filename = OsString::from_vec(old_filename);
-
-                    let new_filename;
-                    if let Ok(vec) = read_vec(&stream) {
-                        new_filename = vec;
-                    } else {
-                        todo!()
-                    }
-                    let new_filename = OsString::from_vec(new_filename);
-
-                    //??
-                    todo!()
-                }
-                MoveFile => {
-                    let mut buf = [0u8; 2 * size_of::<usize>()];
-                    if let Ok(len) = stream.read(&mut buf) {
-                        if len == buf.len() {
-                            let slice = &buf[..];
-                            let (x, slice) = {
-                                let (temp, slice) = slice.split_at(size_of::<usize>());
-                                (usize::from_ne_bytes(temp.try_into().unwrap()), slice)
-                            };
-                            let y = usize::from_ne_bytes(slice.try_into().unwrap());
-
-                            let filename;
-                            if let Ok(vec) = read_vec(&stream) {
-                                filename = vec;
-                            } else {
-                                todo!()
-                            }
-                            let filename = OsString::from_vec(filename);
-                            //??
-                            todo!()
-                        }
-                    }
-                }
-            }
-            set_timestamp(userid);
-            if let Err(err) = stream.write(&[0]) {
-                todo!()
-            };
-        } else {
-            // Tell client about failed request
-            if let Err(err) = stream.write(&[1]) {
-                todo!()
-            };
-        }
-    }
-}
-*/
