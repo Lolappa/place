@@ -6,7 +6,7 @@ use std::{
 };
 
 use place_constants::*;
-use place_lib::file::{File as PlaceFile, Position};
+use place_lib::fs::{Directory, File as PlaceFile, Position};
 
 pub fn write_byte(pos: Position, value: u8) -> Result<()> {
     if pos.x() >= SIZE_X || pos.y() >= SIZE_Y {
@@ -42,5 +42,24 @@ pub fn create_file(file: PlaceFile, name: &OsStr) -> Result<()> {
 
     let mut place_file = File::create_new(Path::new(LOCATION).join("data/files").join(name))?;
     place_file.write(&file.to_stdvec())?;
+    Ok(())
+}
+
+pub fn create_directory(dir: Directory, name: &OsStr) -> Result<()> {
+    if dir.start_pos().x() >= SIZE_X || dir.end_pos().y() >= SIZE_Y {
+        return Err(Error::new(
+            ErrorKind::InvalidInput,
+            "start position out of bounds",
+        ));
+    }
+    if dir.end_pos().x() >= SIZE_X || dir.end_pos().y() >= SIZE_Y {
+        return Err(Error::new(
+            ErrorKind::InvalidInput,
+            "end position out of bounds",
+        ));
+    }
+
+    let mut place_dir = File::create_new(Path::new(LOCATION).join("data/directories").join(name))?;
+    place_dir.write(&dir.to_stdvec())?;
     Ok(())
 }

@@ -6,10 +6,10 @@ use std::{
 };
 
 use chacha20poly1305::{aead::Aead, KeyInit, XChaCha20Poly1305, XNonce};
-use place_constants::{CRYPT_KEY, SOCK_LOCATION};
+use place_constants::{Crypt, CRYPT_KEY, SOCK_LOCATION};
 use place_lib::{
     commands::Command,
-    file::Position,
+    fs::Position,
     packet::{Block, Packet},
     syscalls,
 };
@@ -85,7 +85,7 @@ fn main() {
     };
 
     // Initialize crypt
-    let crypt = XChaCha20Poly1305::new(CRYPT_KEY.into());
+    let crypt = Crypt::new(CRYPT_KEY.into());
     let mut nonce = XNonce::default();
     if let Err(error) = stream.read_exact(&mut nonce) {
         eprintln!("Failed to read from server: {}", error);

@@ -8,6 +8,9 @@ pub struct Pair {
     y: usize,
 }
 
+pub type Position = Pair;
+pub type Size = Pair;
+
 impl Pair {
     pub fn new(x: usize, y: usize) -> Self {
         Self { x, y }
@@ -33,16 +36,16 @@ impl Add for Pair {
     }
 }
 
-pub type Position = Pair;
-pub type Size = Pair;
-
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct File {
+pub struct PlaceObject {
     position: Position,
     size: Size,
 }
 
-impl File {
+pub type File = PlaceObject;
+pub type Directory = PlaceObject;
+
+impl PlaceObject {
     pub fn new(position: Position, size: Size) -> Self {
         Self { position, size }
     }

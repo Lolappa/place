@@ -8,7 +8,7 @@ default:
 	cp target/debug/place_backend target/place/backend
 	
 	mkdir -p target/place/data
-	mkdir -p target/place/data/folders
+	mkdir -p target/place/data/directories
 	mkdir -p target/place/data/files
 	
 	cp target/debug/place_cat target/place/cat

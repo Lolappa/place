@@ -1,4 +1,4 @@
-pub mod file;
+pub mod fs;
 pub mod syscalls;
 
 pub mod commands {
@@ -10,6 +10,9 @@ pub mod commands {
         CreateFile = 2, // Also does moving
         RemoveFile = 3,
         RenameFile = 4,
+        CreateDir = 5, // Also does moving
+        RemoveDir = 6,
+        RenameDir = 7,
     }
 
     impl TryFrom<u8> for Command {
@@ -22,6 +25,9 @@ pub mod commands {
                 _ if value == CreateFile as u8 => Ok(CreateFile),
                 _ if value == RemoveFile as u8 => Ok(RemoveFile),
                 _ if value == RenameFile as u8 => Ok(RenameFile),
+                _ if value == CreateDir as u8 => Ok(CreateDir),
+                _ if value == RemoveDir as u8 => Ok(RemoveDir),
+                _ if value == RenameDir as u8 => Ok(RenameDir),
                 _ => Err(()),
             }
         }
@@ -38,7 +44,7 @@ pub mod packet {
 
     use crate::{
         commands::Command,
-        file::{File, Position},
+        fs::{File, PlaceObject, Position},
     };
 
     pub const CRC_ALG: Algorithm<u32> = crc::CRC_24_OPENPGP;
@@ -94,8 +100,8 @@ pub mod packet {
     pub enum Block {
         HeaderBlock { uid: uid_t, command: Command },
         SetByteContent { position: Position, value: u8 },
-        FileSize(File),
-        FileName(OsString),
+        ObjectSize(PlaceObject),
+        ObjectName(OsString),
     }
 
     impl Block {
@@ -131,11 +137,11 @@ pub mod packet {
         /// [`FileSize`]: Block::FileSize
         #[must_use]
         pub fn is_file_size(&self) -> bool {
-            matches!(self, Self::FileSize(..))
+            matches!(self, Self::ObjectSize(..))
         }
 
         pub fn as_file_size(&self) -> Option<&File> {
-            if let Self::FileSize(v) = self {
+            if let Self::ObjectSize(v) = self {
                 Some(v)
             } else {
                 None
@@ -143,7 +149,7 @@ pub mod packet {
         }
 
         pub fn try_into_file_size(self) -> Result<File, Self> {
-            if let Self::FileSize(v) = self {
+            if let Self::ObjectSize(v) = self {
                 Ok(v)
             } else {
                 Err(self)
@@ -155,11 +161,11 @@ pub mod packet {
         /// [`FileName`]: Block::FileName
         #[must_use]
         pub fn is_file_name(&self) -> bool {
-            matches!(self, Self::FileName(..))
+            matches!(self, Self::ObjectName(..))
         }
 
         pub fn as_file_name(&self) -> Option<&OsString> {
-            if let Self::FileName(v) = self {
+            if let Self::ObjectName(v) = self {
                 Some(v)
             } else {
                 None
@@ -167,7 +173,7 @@ pub mod packet {
         }
 
         pub fn try_into_file_name(self) -> Result<OsString, Self> {
-            if let Self::FileName(v) = self {
+            if let Self::ObjectName(v) = self {
                 Ok(v)
             } else {
                 Err(self)

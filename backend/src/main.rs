@@ -6,7 +6,7 @@ use place_backend::*;
 use place_constants::*;
 use place_lib::{
     commands::Command,
-    file::{File, Position, Size},
+    fs::{File, Position, Size},
     packet::{Block, Packet},
 };
 use std::{
@@ -110,11 +110,11 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
             }
             Command::CreateFile => {
                 let file = match packet.blocks().get(1) {
-                    Some(Block::FileSize(value)) => value,
+                    Some(Block::ObjectSize(value)) => value,
                     _ => todo!(),
                 };
                 let name = match packet.blocks().get(2) {
-                    Some(Block::FileName(value)) => value,
+                    Some(Block::ObjectName(value)) => value,
                     _ => todo!(),
                 };
                 if let Err(err) = actions::create_file(*file, name) {
@@ -123,18 +123,49 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
             }
             Command::RemoveFile => {
                 let name = match packet.blocks().get(2) {
-                    Some(Block::FileName(value)) => value,
+                    Some(Block::ObjectName(value)) => value,
                     _ => todo!(),
                 };
                 todo!()
             }
             Command::RenameFile => {
                 let name = match packet.blocks().get(2) {
-                    Some(Block::FileName(value)) => value,
+                    Some(Block::ObjectName(value)) => value,
                     _ => todo!(),
                 };
                 let name = match packet.blocks().get(2) {
-                    Some(Block::FileName(value)) => value,
+                    Some(Block::ObjectName(value)) => value,
+                    _ => todo!(),
+                };
+                todo!()
+            }
+            Command::CreateDir => {
+                let file = match packet.blocks().get(1) {
+                    Some(Block::ObjectSize(value)) => value,
+                    _ => todo!(),
+                };
+                let name = match packet.blocks().get(2) {
+                    Some(Block::ObjectName(value)) => value,
+                    _ => todo!(),
+                };
+                if let Err(err) = actions::create_file(*file, name) {
+                    todo!();
+                };
+            }
+            Command::RemoveDir => {
+                let name = match packet.blocks().get(2) {
+                    Some(Block::ObjectName(value)) => value,
+                    _ => todo!(),
+                };
+                todo!()
+            }
+            Command::RenameDir => {
+                let name = match packet.blocks().get(2) {
+                    Some(Block::ObjectName(value)) => value,
+                    _ => todo!(),
+                };
+                let name = match packet.blocks().get(2) {
+                    Some(Block::ObjectName(value)) => value,
                     _ => todo!(),
                 };
                 todo!()
