@@ -124,7 +124,7 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
                 };
             }
             Command::RemoveFile => {
-                let name = match packet.blocks().get(2) {
+                let name = match packet.blocks().get(1) {
                     Some(Block::ObjectName(value)) => value,
                     _ => todo!(),
                 };
@@ -134,7 +134,7 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
                 };
             }
             Command::RenameFile => {
-                let from = match packet.blocks().get(2) {
+                let from = match packet.blocks().get(1) {
                     Some(Block::ObjectName(value)) => value,
                     _ => todo!(),
                 };
@@ -162,7 +162,7 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
                 };
             }
             Command::RemoveDir => {
-                let name = match packet.blocks().get(2) {
+                let name = match packet.blocks().get(1) {
                     Some(Block::ObjectName(value)) => value,
                     _ => todo!(),
                 };
@@ -172,7 +172,7 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
                 };
             }
             Command::RenameDir => {
-                let from = match packet.blocks().get(2) {
+                let from = match packet.blocks().get(1) {
                     Some(Block::ObjectName(value)) => value,
                     _ => todo!(),
                 };

@@ -13,8 +13,11 @@ default:
 	
 	cp target/debug/place_cat target/place/cat
 	cp target/debug/place_print target/place/print
-	cp target/debug/place_mkfile target/place/mkfile
+
 	cp target/debug/place_setbyte target/place/setbyte
+	cp target/debug/place_mkfile target/place/mkfile
+	cp target/debug/place_rmfile target/place/rmfile
+	cp target/debug/place_rnfile target/place/rnfile
 
 clean:
 	cargo clean

@@ -48,7 +48,7 @@ pub fn create_file(file: PlaceFile, name: &OsStr) -> Result {
 }
 
 pub fn remove_file(file: &OsStr) -> Result {
-    fs::remove_file(file)?;
+    fs::remove_file(Path::new(DATA_LOCATION).join("file").join(file))?;
     Ok(())
 }
 
@@ -80,7 +80,7 @@ pub fn create_dir(dir: Directory, name: &OsStr) -> Result {
 }
 
 pub fn remove_dir(dir: &OsStr) -> Result {
-    fs::remove_file(dir)?;
+    fs::remove_file(Path::new(DATA_LOCATION).join("file").join(dir))?;
     Ok(())
 }
 

@@ -314,6 +314,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "place_rmfile"
+version = "0.1.0"
+dependencies = [
+ "chacha20poly1305",
+ "place_constants",
+ "place_internal_front_lib",
+ "place_lib",
+ "users",
+]
+
+[[package]]
+name = "place_rnfile"
+version = "0.1.0"
+dependencies = [
+ "chacha20poly1305",
+ "place_constants",
+ "place_internal_front_lib",
+ "place_lib",
+ "users",
+]
+
+[[package]]
 name = "place_setbyte"
 version = "0.1.0"
 dependencies = [
