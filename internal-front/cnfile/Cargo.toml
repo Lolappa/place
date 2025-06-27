@@ -1,0 +1,11 @@
+[package]
+name = "place_cnfile"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+users = { workspace = true }
+chacha20poly1305 = { workspace = true }
+place_lib = { workspace = true }
+place_constants = { workspace = true }
+place_internal_front_lib = { workspace = true }

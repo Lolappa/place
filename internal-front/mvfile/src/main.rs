@@ -10,6 +10,13 @@ use place_lib::{
 fn main() {
     let mut args = env::args().skip(1);
 
+    let name: OsString = if let Some(value) = args.next() {
+        value.into()
+    } else {
+        usage_error();
+        return;
+    };
+
     let start_x: usize = if let Some(value) = args.next() {
         match usize::from_str_radix(&value, 10) {
             Ok(value) => value,
@@ -62,13 +69,6 @@ fn main() {
         return;
     };
 
-    let name: OsString = if let Some(value) = args.next() {
-        value.into()
-    } else {
-        usage_error();
-        return;
-    };
-
     let start_pos = Position::new(start_x, start_y);
     let end_pos = Position::new(end_x, end_y);
 
@@ -91,7 +91,7 @@ fn main() {
 
 fn usage_error() {
     eprintln!(
-        "Usage: {} <start x> <start y> <end x> <end y> <name>",
+        "Usage: {} <name> <start x> <start y> <end x> <end y>",
         env::args().nth(0).unwrap()
     );
 }

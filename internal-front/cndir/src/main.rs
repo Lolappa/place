@@ -27,7 +27,7 @@ fn main() {
 
     let header = Block::HeaderBlock {
         uid,
-        command: Command::RemoveFile,
+        command: Command::RenameDir,
     };
 
     let content_1 = Block::ObjectName(from);

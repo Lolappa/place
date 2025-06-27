@@ -266,6 +266,28 @@ name = "place_cat"
 version = "0.1.0"
 
 [[package]]
+name = "place_cndir"
+version = "0.1.0"
+dependencies = [
+ "chacha20poly1305",
+ "place_constants",
+ "place_internal_front_lib",
+ "place_lib",
+ "users",
+]
+
+[[package]]
+name = "place_cnfile"
+version = "0.1.0"
+dependencies = [
+ "chacha20poly1305",
+ "place_constants",
+ "place_internal_front_lib",
+ "place_lib",
+ "users",
+]
+
+[[package]]
 name = "place_constants"
 version = "0.1.0"
 dependencies = [
@@ -296,7 +318,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "place_mkdir"
+version = "0.1.0"
+dependencies = [
+ "chacha20poly1305",
+ "place_constants",
+ "place_internal_front_lib",
+ "place_lib",
+ "users",
+]
+
+[[package]]
 name = "place_mkfile"
+version = "0.1.0"
+dependencies = [
+ "chacha20poly1305",
+ "place_constants",
+ "place_internal_front_lib",
+ "place_lib",
+ "users",
+]
+
+[[package]]
+name = "place_mvdir"
+version = "0.1.0"
+dependencies = [
+ "chacha20poly1305",
+ "place_constants",
+ "place_internal_front_lib",
+ "place_lib",
+ "users",
+]
+
+[[package]]
+name = "place_mvfile"
 version = "0.1.0"
 dependencies = [
  "chacha20poly1305",
@@ -314,7 +369,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "place_rmfile"
+name = "place_rmdir"
 version = "0.1.0"
 dependencies = [
  "chacha20poly1305",
@@ -325,7 +380,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "place_rnfile"
+name = "place_rmfile"
 version = "0.1.0"
 dependencies = [
  "chacha20poly1305",

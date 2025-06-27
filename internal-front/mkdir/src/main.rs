@@ -2,7 +2,7 @@ use std::{env, ffi::OsString};
 
 use place_lib::{
     commands::Command,
-    fs::{File, Position},
+    fs::{Directory, Position},
     packet::{Block, Packet},
     syscalls,
 };
@@ -72,16 +72,16 @@ fn main() {
     let start_pos = Position::new(start_x, start_y);
     let end_pos = Position::new(end_x, end_y);
 
-    let file = File::from_start_end(start_pos, end_pos);
+    let dir = Directory::from_start_end(start_pos, end_pos);
 
     let uid = syscalls::get_current_uid();
 
     let header = Block::HeaderBlock {
         uid,
-        command: Command::CreateFile,
+        command: Command::CreateDir,
     };
 
-    let content_1 = Block::ObjectSize(file);
+    let content_1 = Block::ObjectSize(dir);
     let content_2 = Block::ObjectName(name);
 
     let packet = Packet::new(vec![header, content_1, content_2]);
