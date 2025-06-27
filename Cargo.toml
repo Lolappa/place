@@ -25,3 +25,4 @@ postcard = { version = "1.0.0", features = ["use-std", "use-crc"] }
 
 place_constants = { path = "constants" }
 place_lib = { path = "lib" }
+place_internal_front_lib = { path = "internal-front/lib" }

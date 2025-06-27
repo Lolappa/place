@@ -1,73 +1,104 @@
-use std::env::args;
-use std::ffi::{OsStr, OsString};
-use std::io::{BufRead, Read, Result, Write};
-use std::os::unix::net::UnixStream;
+use std::{
+    env,
+    ffi::OsString,
+    io::{Read, Write},
+    os::unix::net::UnixStream,
+};
 
-use place_constants::SOCK_LOCATION;
-use place_lib::commands::Command;
-use users::get_current_uid;
+use chacha20poly1305::{aead::Aead, KeyInit, XNonce};
+use place_constants::{Crypt, CRYPT_KEY, SOCK_LOCATION};
+use place_lib::{
+    commands::Command,
+    fs::{File, Position},
+    packet::{Block, Packet},
+    syscalls,
+};
 
 fn main() {
-    let mut args = args().skip(1);
-    let x = usize::from_str_radix(
-        &args
-            .next()
-            .expect("Usage: {} <start x> <start y> <width> <height> <filename>"),
-        10,
-    )
-    .expect("Invalid x");
-    let y = usize::from_str_radix(
-        &args
-            .next()
-            .expect("Usage: {} <start x> <start y> <width> <height> <filename>"),
-        10,
-    )
-    .expect("Invalid y");
-    let dx = usize::from_str_radix(
-        &args
-            .next()
-            .expect("Usage: {} <start x> <start y> <width> <height> <filename>"),
-        10,
-    )
-    .expect("Invalid width");
-    let dy = usize::from_str_radix(
-        &args
-            .next()
-            .expect("Usage: {} <start x> <start y> <width> <height> <filename>"),
-        10,
-    )
-    .expect("Invalid height");
-    let filename = OsString::from(
-        args.next()
-            .expect("Usage: {} <start x> <start y> <width> <height> <filename>"),
-    );
+    let mut args = env::args().skip(1);
 
-    if let Err(err) = mkfile((x, y), (dx, dy), &filename) {
-        todo!()
-    }
-}
-
-fn mkfile((x, y): (usize, usize), (dx, dy): (usize, usize), name: &OsStr) -> Result<()> {
-    let mut stream = UnixStream::connect(SOCK_LOCATION)?;
-
-    stream.write_all(&get_current_uid().to_ne_bytes())?;
-    stream.write_all(&[Command::CreateFile as u8])?;
-
-    let mut buf = [0u8];
-    stream.read(&mut buf)?;
-    if buf[0] == 0 {
-        stream.write_all(&x.to_ne_bytes())?;
-        stream.write_all(&y.to_ne_bytes())?;
-        stream.write_all(&dx.to_ne_bytes())?;
-        stream.write_all(&dy.to_ne_bytes())?;
-        if buf[0] == 0 {
-            todo!()
-        } else {
-            todo!()
+    let start_x: usize = if let Some(value) = args.next() {
+        match usize::from_str_radix(&value, 10) {
+            Ok(value) => value,
+            Err(error) => {
+                eprintln!("Invalid start x: {}", error);
+                return;
+            }
         }
     } else {
-        todo!()
-    }
+        usage_error();
+        return;
+    };
 
-    Ok(())
+    let start_y: usize = if let Some(value) = args.next() {
+        match usize::from_str_radix(&value, 10) {
+            Ok(value) => value,
+            Err(error) => {
+                eprintln!("Invalid start y: {}", error);
+                return;
+            }
+        }
+    } else {
+        usage_error();
+        return;
+    };
+
+    let end_x: usize = if let Some(value) = args.next() {
+        match usize::from_str_radix(&value, 10) {
+            Ok(value) => value,
+            Err(error) => {
+                eprintln!("Invalid end x: {}", error);
+                return;
+            }
+        }
+    } else {
+        usage_error();
+        return;
+    };
+
+    let end_y: usize = if let Some(value) = args.next() {
+        match usize::from_str_radix(&value, 10) {
+            Ok(value) => value,
+            Err(error) => {
+                eprintln!("Invalid end y: {}", error);
+                return;
+            }
+        }
+    } else {
+        usage_error();
+        return;
+    };
+
+    let name: OsString = if let Some(value) = args.next() {
+        value.into()
+    } else {
+        usage_error();
+        return;
+    };
+
+    let start_pos = Position::new(start_x, start_y);
+    let end_pos = Position::new(end_x, end_y);
+
+    let file = File::from_start_end(start_pos, end_pos);
+
+    let uid = syscalls::get_current_uid();
+
+    let header = Block::HeaderBlock {
+        uid,
+        command: Command::CreateFile,
+    };
+
+    let content_1 = Block::ObjectSize(file);
+    let content_2 = Block::ObjectName(name);
+
+    let packet = Packet::new(vec![header, content_1, content_2]);
+
+    place_internal_front_lib::send_packet(packet);
+}
+
+fn usage_error() {
+    eprintln!(
+        "Usage: {} <start x> <start y> <end x> <end y> <name>",
+        env::args().nth(0).unwrap()
+    );
 }

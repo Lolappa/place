@@ -5,5 +5,7 @@ edition = "2021"
 
 [dependencies]
 users = { workspace = true }
-place_constants = { workspace = true }
+chacha20poly1305 = { workspace = true }
 place_lib = { workspace = true }
+place_constants = { workspace = true }
+place_internal_front_lib = { workspace = true }

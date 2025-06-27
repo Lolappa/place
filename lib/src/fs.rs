@@ -1,4 +1,10 @@
-use std::{array::TryFromSliceError, fs, io, ops::Add, path::Path};
+use std::{
+    array::TryFromSliceError,
+    fs, io,
+    ops::{Add, Sub},
+    path::Path,
+    sync::atomic::ATOMIC_USIZE_INIT,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -32,6 +38,17 @@ impl Add for Pair {
         Self::Output {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
+        }
+    }
+}
+
+impl Sub for Pair {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self::Output {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
         }
     }
 }
@@ -101,6 +118,24 @@ impl PlaceObject {
         match Self::from_bytes(&fs::read(path)?) {
             Ok(value) => Ok(value),
             Err(error) => Err(io::Error::new(io::ErrorKind::UnexpectedEof, error)),
+        }
+    }
+
+    pub fn from_start_end(start_pos: Position, end_pos: Position) -> Self {
+        let (start_pos, end_pos) = (
+            Position {
+                x: usize::min(start_pos.x, end_pos.x),
+                y: usize::min(start_pos.y, end_pos.y),
+            },
+            Position {
+                x: usize::max(start_pos.x, end_pos.x),
+                y: usize::max(start_pos.y, end_pos.y),
+            },
+        );
+
+        PlaceObject {
+            position: start_pos,
+            size: end_pos - start_pos,
         }
     }
 }
