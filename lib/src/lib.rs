@@ -7,12 +7,14 @@ pub mod commands {
     #[derive(Serialize, Deserialize, Clone, Copy)]
     pub enum Command {
         SetByte = 1,
-        CreateFile = 2, // Also does moving
-        RemoveFile = 3,
-        RenameFile = 4,
-        CreateDir = 5, // Also does moving
-        RemoveDir = 6,
-        RenameDir = 7,
+        CreateFile = 2,
+        MoveFile = 3,
+        RemoveFile = 4,
+        RenameFile = 5,
+        CreateDir = 6,
+        MoveDir = 7,
+        RemoveDir = 8,
+        RenameDir = 9,
     }
 
     impl TryFrom<u8> for Command {
@@ -23,9 +25,11 @@ pub mod commands {
             match value {
                 _ if value == SetByte as u8 => Ok(SetByte),
                 _ if value == CreateFile as u8 => Ok(CreateFile),
+                _ if value == MoveFile as u8 => Ok(MoveFile),
                 _ if value == RemoveFile as u8 => Ok(RemoveFile),
                 _ if value == RenameFile as u8 => Ok(RenameFile),
                 _ if value == CreateDir as u8 => Ok(CreateDir),
+                _ if value == MoveDir as u8 => Ok(MoveDir),
                 _ if value == RemoveDir as u8 => Ok(RemoveDir),
                 _ if value == RenameDir as u8 => Ok(RenameDir),
                 _ => Err(()),

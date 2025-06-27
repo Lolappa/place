@@ -42,7 +42,29 @@ pub fn create_file(file: PlaceFile, name: &OsStr) -> Result {
         ));
     }
 
-    let mut place_file = File::create(Path::new(DATA_LOCATION).join("file").join(name))?;
+    let mut place_file = File::create_new(Path::new(DATA_LOCATION).join("file").join(name))?;
+    place_file.write(&file.to_stdvec())?;
+    Ok(())
+}
+
+pub fn move_file(name: &OsStr, file: PlaceFile) -> Result {
+    if file.start_pos().x() >= SIZE_X || file.end_pos().y() >= SIZE_Y {
+        return Err(Error::new(
+            ErrorKind::InvalidInput,
+            "start position out of bounds",
+        ));
+    }
+    if file.end_pos().x() >= SIZE_X || file.end_pos().y() >= SIZE_Y {
+        return Err(Error::new(
+            ErrorKind::InvalidInput,
+            "end position out of bounds",
+        ));
+    }
+
+    let mut place_file = File::options()
+        .write(true)
+        .truncate(true)
+        .open(Path::new(DATA_LOCATION).join("file").join(name))?;
     place_file.write(&file.to_stdvec())?;
     Ok(())
 }
@@ -74,7 +96,29 @@ pub fn create_dir(dir: Directory, name: &OsStr) -> Result {
         ));
     }
 
-    let mut place_dir = File::create(Path::new(DATA_LOCATION).join("dir").join(name))?;
+    let mut place_dir = File::create_new(Path::new(DATA_LOCATION).join("dir").join(name))?;
+    place_dir.write(&dir.to_stdvec())?;
+    Ok(())
+}
+
+pub fn move_dir(name: &OsStr, dir: Directory) -> Result {
+    if dir.start_pos().x() >= SIZE_X || dir.end_pos().y() >= SIZE_Y {
+        return Err(Error::new(
+            ErrorKind::InvalidInput,
+            "start position out of bounds",
+        ));
+    }
+    if dir.end_pos().x() >= SIZE_X || dir.end_pos().y() >= SIZE_Y {
+        return Err(Error::new(
+            ErrorKind::InvalidInput,
+            "end position out of bounds",
+        ));
+    }
+
+    let mut place_dir = File::options()
+        .write(true)
+        .truncate(true)
+        .open(Path::new(DATA_LOCATION).join("dir").join(name))?;
     place_dir.write(&dir.to_stdvec())?;
     Ok(())
 }

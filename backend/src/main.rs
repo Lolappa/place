@@ -123,6 +123,20 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
                     todo!();
                 };
             }
+            Command::MoveFile => {
+                let name = match packet.blocks().get(1) {
+                    Some(Block::ObjectName(value)) => value,
+                    _ => todo!(),
+                };
+                let file = match packet.blocks().get(2) {
+                    Some(Block::ObjectSize(value)) => value,
+                    _ => todo!(),
+                };
+
+                if let Err(err) = actions::move_file(name, *file) {
+                    todo!();
+                };
+            }
             Command::RemoveFile => {
                 let name = match packet.blocks().get(1) {
                     Some(Block::ObjectName(value)) => value,
@@ -158,6 +172,20 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
                 };
 
                 if let Err(err) = actions::create_dir(*dir, name) {
+                    todo!();
+                };
+            }
+            Command::MoveDir => {
+                let name = match packet.blocks().get(2) {
+                    Some(Block::ObjectName(value)) => value,
+                    _ => todo!(),
+                };
+                let dir = match packet.blocks().get(1) {
+                    Some(Block::ObjectSize(value)) => value,
+                    _ => todo!(),
+                };
+
+                if let Err(err) = actions::move_dir(name, *dir) {
                     todo!();
                 };
             }
