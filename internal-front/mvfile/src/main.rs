@@ -78,11 +78,11 @@ fn main() {
 
     let header = Block::HeaderBlock {
         uid,
-        command: Command::CreateFile,
+        command: Command::MoveFile,
     };
 
-    let content_1 = Block::ObjectSize(file);
-    let content_2 = Block::ObjectName(name);
+    let content_1 = Block::ObjectName(name);
+    let content_2 = Block::ObjectSize(file);
 
     let packet = Packet::new(vec![header, content_1, content_2]);
 

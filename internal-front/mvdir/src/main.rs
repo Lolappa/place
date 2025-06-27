@@ -78,11 +78,11 @@ fn main() {
 
     let header = Block::HeaderBlock {
         uid,
-        command: Command::CreateDir,
+        command: Command::MoveDir,
     };
 
-    let content_1 = Block::ObjectSize(dir);
-    let content_2 = Block::ObjectName(name);
+    let content_1 = Block::ObjectName(name);
+    let content_2 = Block::ObjectSize(dir);
 
     let packet = Packet::new(vec![header, content_1, content_2]);
 
