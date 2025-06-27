@@ -1,14 +1,16 @@
 use std::{
     ffi::OsStr,
-    fs::File,
-    io::{Error, ErrorKind, Result, Seek, SeekFrom, Write},
+    fs::{self, File},
+    io::{self, Error, ErrorKind, Seek, SeekFrom, Write},
     path::Path,
 };
 
 use place_constants::*;
 use place_lib::fs::{Directory, File as PlaceFile, Position};
 
-pub fn write_byte(pos: Position, value: u8) -> Result<()> {
+type Result = io::Result<()>;
+
+pub fn write_byte(pos: Position, value: u8) -> Result {
     if pos.x() >= SIZE_X || pos.y() >= SIZE_Y {
         return Err(Error::new(
             ErrorKind::InvalidInput,
@@ -17,7 +19,7 @@ pub fn write_byte(pos: Position, value: u8) -> Result<()> {
     }
     let mut data_file = File::options()
         .write(true)
-        .open(Path::new(LOCATION).join("data/data"))
+        .open(Path::new(DATA_LOCATION).join("data"))
         .unwrap();
     data_file.seek(SeekFrom::Start(
         (pos.y() * SIZE_X + pos.x()).try_into().unwrap(),
@@ -26,7 +28,7 @@ pub fn write_byte(pos: Position, value: u8) -> Result<()> {
     Ok(())
 }
 
-pub fn create_file(file: PlaceFile, name: &OsStr) -> Result<()> {
+pub fn create_file(file: PlaceFile, name: &OsStr) -> Result {
     if file.start_pos().x() >= SIZE_X || file.end_pos().y() >= SIZE_Y {
         return Err(Error::new(
             ErrorKind::InvalidInput,
@@ -40,12 +42,25 @@ pub fn create_file(file: PlaceFile, name: &OsStr) -> Result<()> {
         ));
     }
 
-    let mut place_file = File::create_new(Path::new(LOCATION).join("data/files").join(name))?;
+    let mut place_file = File::create(Path::new(DATA_LOCATION).join("file").join(name))?;
     place_file.write(&file.to_stdvec())?;
     Ok(())
 }
 
-pub fn create_directory(dir: Directory, name: &OsStr) -> Result<()> {
+pub fn remove_file(file: &OsStr) -> Result {
+    fs::remove_file(file)?;
+    Ok(())
+}
+
+pub fn rename_file(from: &OsStr, to: &OsStr) -> Result {
+    let files_dir = Path::new(DATA_LOCATION).join("file");
+    if !fs::exists(files_dir.join(to))? {
+        fs::rename(files_dir.join(from), files_dir.join(to))?;
+    }
+    Ok(())
+}
+
+pub fn create_dir(dir: Directory, name: &OsStr) -> Result {
     if dir.start_pos().x() >= SIZE_X || dir.end_pos().y() >= SIZE_Y {
         return Err(Error::new(
             ErrorKind::InvalidInput,
@@ -59,7 +74,20 @@ pub fn create_directory(dir: Directory, name: &OsStr) -> Result<()> {
         ));
     }
 
-    let mut place_dir = File::create_new(Path::new(LOCATION).join("data/directories").join(name))?;
+    let mut place_dir = File::create(Path::new(DATA_LOCATION).join("dir").join(name))?;
     place_dir.write(&dir.to_stdvec())?;
+    Ok(())
+}
+
+pub fn remove_dir(dir: &OsStr) -> Result {
+    fs::remove_file(dir)?;
+    Ok(())
+}
+
+pub fn rename_dir(from: &OsStr, to: &OsStr) -> Result {
+    let dirs_dir = Path::new(DATA_LOCATION).join("dir");
+    if !fs::exists(dirs_dir.join(to))? {
+        fs::rename(dirs_dir.join(from), dirs_dir.join(to))?;
+    }
     Ok(())
 }

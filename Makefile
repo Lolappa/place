@@ -8,8 +8,8 @@ default:
 	cp target/debug/place_backend target/place/backend
 	
 	mkdir -p target/place/data
-	mkdir -p target/place/data/directories
-	mkdir -p target/place/data/files
+	mkdir -p target/place/data/dir
+	mkdir -p target/place/data/file
 	
 	cp target/debug/place_cat target/place/cat
 	cp target/debug/place_print target/place/print

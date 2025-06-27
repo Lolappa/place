@@ -108,6 +108,7 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
                     todo!()
                 }
             }
+            // TODO: Make the following actions update the filesystem representation
             Command::CreateFile => {
                 let file = match packet.blocks().get(1) {
                     Some(Block::ObjectSize(value)) => value,
@@ -117,6 +118,7 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
                     Some(Block::ObjectName(value)) => value,
                     _ => todo!(),
                 };
+
                 if let Err(err) = actions::create_file(*file, name) {
                     todo!();
                 };
@@ -126,21 +128,27 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
                     Some(Block::ObjectName(value)) => value,
                     _ => todo!(),
                 };
-                todo!()
+
+                if let Err(err) = actions::remove_file(name) {
+                    todo!();
+                };
             }
             Command::RenameFile => {
-                let name = match packet.blocks().get(2) {
+                let from = match packet.blocks().get(2) {
                     Some(Block::ObjectName(value)) => value,
                     _ => todo!(),
                 };
-                let name = match packet.blocks().get(2) {
+                let to = match packet.blocks().get(2) {
                     Some(Block::ObjectName(value)) => value,
                     _ => todo!(),
                 };
-                todo!()
+
+                if let Err(err) = actions::rename_file(&from, &to) {
+                    todo!();
+                };
             }
             Command::CreateDir => {
-                let file = match packet.blocks().get(1) {
+                let dir = match packet.blocks().get(1) {
                     Some(Block::ObjectSize(value)) => value,
                     _ => todo!(),
                 };
@@ -148,7 +156,8 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
                     Some(Block::ObjectName(value)) => value,
                     _ => todo!(),
                 };
-                if let Err(err) = actions::create_file(*file, name) {
+
+                if let Err(err) = actions::create_dir(*dir, name) {
                     todo!();
                 };
             }
@@ -157,18 +166,24 @@ fn handle_client(mut stream: UnixStream, timestamps: &Mutex<HashMap<uid_t, Syste
                     Some(Block::ObjectName(value)) => value,
                     _ => todo!(),
                 };
-                todo!()
+
+                if let Err(err) = actions::remove_dir(name) {
+                    todo!();
+                };
             }
             Command::RenameDir => {
-                let name = match packet.blocks().get(2) {
+                let from = match packet.blocks().get(2) {
                     Some(Block::ObjectName(value)) => value,
                     _ => todo!(),
                 };
-                let name = match packet.blocks().get(2) {
+                let to = match packet.blocks().get(2) {
                     Some(Block::ObjectName(value)) => value,
                     _ => todo!(),
                 };
-                todo!()
+
+                if let Err(err) = actions::rename_dir(&from, &to) {
+                    todo!();
+                };
             }
         }
         set_timestamp(uid, timestamps);
