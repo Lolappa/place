@@ -13,6 +13,7 @@ use place_lib::packet::CRC_ALG;
 use users::uid_t;
 
 pub mod actions;
+pub mod place_fs;
 
 pub fn can_do_change(
     userid: uid_t,

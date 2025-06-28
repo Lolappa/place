@@ -3,7 +3,6 @@ use std::{
     fs, io,
     ops::{Add, Sub},
     path::Path,
-    sync::atomic::ATOMIC_USIZE_INIT,
 };
 
 use serde::{Deserialize, Serialize};
@@ -53,7 +52,7 @@ impl Sub for Pair {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
 pub struct PlaceObject {
     position: Position,
     size: Size,
@@ -137,5 +136,12 @@ impl PlaceObject {
             position: start_pos,
             size: end_pos - start_pos,
         }
+    }
+
+    pub fn is_inside(&self, other: Self) -> bool {
+        self.position.x >= other.position.x
+            && self.position.y >= other.position.y
+            && self.end_pos().x <= other.end_pos().x
+            && self.end_pos().y <= other.end_pos().y
     }
 }

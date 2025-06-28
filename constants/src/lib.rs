@@ -15,4 +15,6 @@ pub const LOCATION: &'static str = include!(out_dir!("/location"));
 pub const SOCK_LOCATION: &'static str = concat!(include!(out_dir!("/location")), "/.sock",);
 pub const BACKEND_LOCATION: &'static str = concat!(include!(out_dir!("/location")), "/backend/",);
 pub const DATA_LOCATION: &'static str = concat!(include!(out_dir!("/location")), "/data/",);
+pub const FILESYSTEM_LOCATION: &'static str = concat!(include!(out_dir!("/location")), "/place/",);
+pub const DIR_LOCATION: &'static str = concat!(include!(out_dir!("/location")), "/.dir/",);
 pub const CRYPT_KEY: &'static [u8; 32] = include_bytes!(out_dir!("/crypt_key"));

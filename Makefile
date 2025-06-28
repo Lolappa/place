@@ -3,6 +3,7 @@ default:
 	
 	mkdir -p target/place
 	mkdir -p target/place/place
+	mkdir -p targer/place/.dir
 	
 	mkdir -p target/place/backend
 	cp target/debug/place_backend target/place/backend

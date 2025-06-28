@@ -8,6 +8,8 @@ use std::{
 use place_constants::*;
 use place_lib::fs::{Directory, File as PlaceFile, Position};
 
+use crate::place_fs;
+
 type Result = io::Result<()>;
 
 pub fn write_byte(pos: Position, value: u8) -> Result {
@@ -44,6 +46,9 @@ pub fn create_file(file: PlaceFile, name: &OsStr) -> Result {
 
     let mut place_file = File::create_new(Path::new(DATA_LOCATION).join("file").join(name))?;
     place_file.write(&file.to_stdvec())?;
+
+    place_fs::update_file_add(name)?;
+
     Ok(())
 }
 
@@ -98,6 +103,9 @@ pub fn create_dir(dir: Directory, name: &OsStr) -> Result {
 
     let mut place_dir = File::create_new(Path::new(DATA_LOCATION).join("dir").join(name))?;
     place_dir.write(&dir.to_stdvec())?;
+
+    place_fs::update_dir_add(name)?;
+
     Ok(())
 }
 
